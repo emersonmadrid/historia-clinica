@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  NURSE
+  RECEPTIONIST
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum DocumentType {
+  DNI
+  CE
+  PASSPORT
+  RUC
+}
+
+enum BloodType {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  COHABITANT
+}
+
+enum DiagnosisType {
+  PRIMARY
+  SECONDARY
+  COMPLICATION
+}
+
+enum DiagnosisStatus {
+  ACTIVE
+  RESOLVED
+  CHRONIC
+}
+
+enum AllergySeverity {
+  MILD
+  MODERATE
+  SEVERE
+}
+
+enum BackgroundType {
+  PERSONAL
+  FAMILY
+  SURGICAL
+  PHARMACOLOGICAL
+  OBSTETRIC
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String
+  role        Role     @default(DOCTOR)
+  speciality  String?
+  avatar      String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  googleAccessToken  String?
+  googleRefreshToken String?
+  googleTokenExpiry  DateTime?
+
+  consultations ClinicalRecord[]
+  appointments  Appointment[]
+
+  @@map("users")
+}
+
+model Patient {
+  id              String        @id @default(cuid())
+  firstName       String
+  lastName        String
+  documentType    DocumentType  @default(DNI)
+  documentNumber  String        @unique
+  birthDate       DateTime
+  gender          Gender
+  phone           String?
+  email           String?
+  address         String?
+  city            String?
+  bloodType       BloodType?
+  maritalStatus   MaritalStatus?
+  occupation      String?
+  insuranceNumber String?
+
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  emergencyContactRel   String?
+
+  notes     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clinicalRecords    ClinicalRecord[]
+  appointments       Appointment[]
+  allergies          Allergy[]
+  medicalBackgrounds MedicalBackground[]
+
+  @@map("patients")
+}
+
+model ClinicalRecord {
+  id          String   @id @default(cuid())
+  patientId   String
+  doctorId    String
+  date        DateTime @default(now())
+  reason      String
+  subjective  String?  @db.Text
+  objective   String?  @db.Text
+  assessment  String?  @db.Text
+  plan        String?  @db.Text
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patient    Patient      @relation(fields: [patientId], references: [id])
+  doctor     User         @relation(fields: [doctorId], references: [id])
+  vitalSigns VitalSigns?
+  diagnoses  Diagnosis[]
+
+  @@map("clinical_records")
+}
+
+model VitalSigns {
+  id               String   @id @default(cuid())
+  consultationId   String   @unique
+  height           Float?
+  weight           Float?
+  bmi              Float?
+  temperature      Float?
+  bloodPressureSys Int?
+  bloodPressureDia Int?
+  heartRate        Int?
+  oxygenSat        Float?
+  respiratoryRate  Int?
+  glucoseLevel     Float?
+  createdAt        DateTime @default(now())
+
+  consultation ClinicalRecord @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("vital_signs")
+}
+
+model Diagnosis {
+  id             String          @id @default(cuid())
+  consultationId String
+  code           String
+  description    String
+  type           DiagnosisType   @default(PRIMARY)
+  status         DiagnosisStatus @default(ACTIVE)
+  notes          String?
+  createdAt      DateTime        @default(now())
+
+  consultation ClinicalRecord @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("diagnoses")
+}
+
+model Allergy {
+  id        String          @id @default(cuid())
+  patientId String
+  allergen  String
+  reaction  String?
+  severity  AllergySeverity @default(MILD)
+  notes     String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("allergies")
+}
+
+model MedicalBackground {
+  id          String         @id @default(cuid())
+  patientId   String
+  type        BackgroundType
+  description String
+  date        DateTime?
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("medical_backgrounds")
+}
+
+model Appointment {
+  id        String            @id @default(cuid())
+  patientId String
+  doctorId  String
+  dateTime  DateTime
+  duration  Int               @default(30)
+  status    AppointmentStatus @default(SCHEDULED)
+  reason    String
+  notes     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  googleEventId   String?
+  rsvpToken       String?  @unique
+  reminderSentAt  DateTime?
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  doctor  User    @relation(fields: [doctorId], references: [id])
+
+  @@map("appointments")
+}
