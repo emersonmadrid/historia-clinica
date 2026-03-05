@@ -42,3 +42,5 @@ next-env.d.ts
 
 /src/generated/prisma
 cron.log
+test-results/
+tests/screenshots/
