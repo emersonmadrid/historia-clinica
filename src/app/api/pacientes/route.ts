@@ -56,8 +56,6 @@ export async function GET(request: NextRequest) {
         ? [{ lastName: sortOrder }, { firstName: sortOrder }]
         : sortBy === 'age'
         ? { birthDate: sortOrder === 'asc' ? 'desc' as const : 'asc' as const }
-        : sortBy === 'lastVisit'
-        ? { clinicalRecords: { _max: { date: sortOrder } } }
         : { createdAt: sortOrder }
 
     const [patients, total] = await Promise.all([
