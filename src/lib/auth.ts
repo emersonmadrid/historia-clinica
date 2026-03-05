@@ -13,14 +13,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log('[auth] missing credentials')
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        })
+        let user
+        try {
+          user = await prisma.user.findUnique({
+            where: { email: credentials.email as string },
+          })
+          console.log('[auth] user found:', !!user, 'active:', user?.active)
+        } catch (e) {
+          console.error('[auth] DB error:', e)
+          return null
+        }
 
         if (!user || !user.active) {
+          console.log('[auth] user not found or inactive')
           return null
         }
 
@@ -28,6 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           credentials.password as string,
           user.password
         )
+        console.log('[auth] password valid:', isPasswordValid)
 
         if (!isPasswordValid) {
           return null
