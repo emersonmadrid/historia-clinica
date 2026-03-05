@@ -11,7 +11,8 @@ export default auth((req) => {
     pathname.startsWith('/api/citas/rsvp') ||
     pathname.startsWith('/api/citas/') && pathname.endsWith('/ics') ||
     pathname.startsWith('/citas/respuesta') ||
-    pathname.startsWith('/api/health')
+    pathname.startsWith('/api/health') ||
+    pathname.startsWith('/api/cron/')
 
   if (isApiAuth || isPublic) {
     return NextResponse.next()
