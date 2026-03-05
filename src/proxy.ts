@@ -10,7 +10,8 @@ export default auth((req) => {
   const isPublic =
     pathname.startsWith('/api/citas/rsvp') ||
     pathname.startsWith('/api/citas/') && pathname.endsWith('/ics') ||
-    pathname.startsWith('/citas/respuesta')
+    pathname.startsWith('/citas/respuesta') ||
+    pathname.startsWith('/api/health')
 
   if (isApiAuth || isPublic) {
     return NextResponse.next()
