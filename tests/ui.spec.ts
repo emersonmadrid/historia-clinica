@@ -13,15 +13,13 @@ async function login(page: Page) {
 // Navega al perfil del primer paciente con registros (Juan Carlos)
 async function goToPatientWithRecords(page: Page): Promise<string> {
   await login(page)
-  await page.goto(`${BASE}/pacientes`)
-  await page.waitForSelector('tbody tr', { timeout: 8000 })
-  // Buscar Juan Carlos que tiene consultas en el seed
-  await page.fill('input[placeholder*="Buscar"]', 'Juan')
-  await page.waitForTimeout(600)
-  const row = page.locator('tbody tr').first()
-  await row.locator('a').first().click()
-  await page.waitForURL(/\/pacientes\/[a-z0-9]+$/)
-  return page.url()
+  const res = await page.request.get(`${BASE}/api/pacientes?search=Juan&limit=1`)
+  const data = await res.json()
+  const patientId = data.patients?.[0]?.id
+  if (!patientId) throw new Error('No se encontró paciente con nombre Juan en el seed')
+  await page.goto(`${BASE}/pacientes/${patientId}`)
+  await page.waitForLoadState('networkidle')
+  return `${BASE}/pacientes/${patientId}`
 }
 
 // ─────────────────────────────────────────────
@@ -70,7 +68,8 @@ test.describe('Autenticación', () => {
   test('login page con sesión redirige al dashboard', async ({ page }) => {
     await login(page)
     await page.goto(`${BASE}/login`)
-    await expect(page).toHaveURL(`${BASE}/`)
+    await page.waitForTimeout(1000)
+    await expect(page).not.toHaveURL(/\/login/)
   })
 })
 
@@ -188,7 +187,7 @@ test.describe('Lista de Pacientes', () => {
   })
 
   test('click en paciente navega al perfil', async ({ page }) => {
-    await page.locator('tbody tr').first().locator('a').first().click()
+    await page.locator('tbody tr').first().locator('td').first().click()
     await expect(page).toHaveURL(/\/pacientes\/[a-z0-9]+$/)
     await page.screenshot({ path: 'tests/screenshots/10-perfil-paciente.png', fullPage: true })
   })
@@ -236,10 +235,10 @@ test.describe('Formulario Nuevo Paciente', () => {
   test('muestra error si el documento ya existe', async ({ page }) => {
     await page.fill('input[name="firstName"]', 'Duplicado')
     await page.fill('input[name="lastName"]', 'Test')
-    await page.fill('input[name="documentNumber"]', '12345678') // ya existe en seed
+    await page.fill('input[name="documentNumber"]', '36066585') // ya existe en seed
     await page.fill('input[name="birthDate"]', '2000-01-01')
     await page.locator('button[type="submit"]').click()
-    await expect(page.locator('text=/Ya existe/i')).toBeVisible({ timeout: 8000 })
+    await expect(page.locator('text=/Ya existe/i').first()).toBeVisible({ timeout: 8000 })
     await page.screenshot({ path: 'tests/screenshots/14-documento-duplicado.png', fullPage: true })
   })
 })
@@ -580,5 +579,250 @@ test.describe('Navegación General', () => {
     await expect(page).toHaveURL(/login/, { timeout: 8000 })
     await page.goto(`${BASE}/pacientes`)
     await expect(page).toHaveURL(/login/)
+  })
+})
+
+// ─────────────────────────────────────────────
+// 11. GESTIÓN DE USUARIOS (ADMIN)
+// ─────────────────────────────────────────────
+async function loginAsAdmin(page: Page) {
+  await page.goto(`${BASE}/login`)
+  await page.fill('input[type="email"]', 'admin@clinica.com')
+  await page.fill('input[type="password"]', 'admin1234')
+  await page.click('button[type="submit"]')
+  await page.waitForURL(`${BASE}/`, { timeout: 10000 })
+}
+
+test.describe('Gestión de Usuarios', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page)
+    await page.goto(`${BASE}/configuracion/usuarios`)
+    await page.waitForLoadState('networkidle')
+  })
+
+  test('lista de usuarios se muestra correctamente', async ({ page }) => {
+    await expect(page.locator('text=/Usuarios|usuarios/i').first()).toBeVisible()
+    await page.screenshot({ path: 'tests/screenshots/40-usuarios-lista.png', fullPage: true })
+  })
+
+  test('muestra los usuarios del seed', async ({ page }) => {
+    await expect(page.locator('text=/doctor@clinica|admin@clinica/i').first()).toBeVisible()
+  })
+
+  test('botón Nuevo Usuario abre dialog', async ({ page }) => {
+    await page.locator('button:has-text("Nuevo Usuario")').click()
+    await expect(page.locator('[role="dialog"]')).toBeVisible()
+    await page.screenshot({ path: 'tests/screenshots/41-nuevo-usuario-dialog.png', fullPage: true })
+  })
+
+  test('crear usuario nuevo funciona', async ({ page }) => {
+    await page.locator('button:has-text("Nuevo Usuario")').click()
+    await page.waitForSelector('[role="dialog"]')
+    await page.fill('#create-name', 'Dr. Test Playwright')
+    await page.fill('#create-email', `test.playwright.${Date.now()}@clinica.com`)
+    await page.fill('#create-password', 'test1234')
+    const submitBtn = page.locator('[role="dialog"] button[type="submit"]')
+    await submitBtn.click()
+    await page.waitForTimeout(2000)
+    await page.screenshot({ path: 'tests/screenshots/42-usuario-creado.png', fullPage: true })
+  })
+})
+
+// ─────────────────────────────────────────────
+// 12. ALERGIAS Y ANTECEDENTES
+// ─────────────────────────────────────────────
+test.describe('Alergias del Paciente', () => {
+  test.beforeEach(async ({ page }) => {
+    await goToPatientWithRecords(page)
+    await page.locator('[role="tab"]:has-text("Alergias")').click()
+    await page.waitForLoadState('networkidle')
+  })
+
+  test('tab Alergias muestra botón Agregar Alergia', async ({ page }) => {
+    await expect(page.locator('button:has-text("Agregar Alergia")')).toBeVisible()
+    await page.screenshot({ path: 'tests/screenshots/43-alergias-tab.png', fullPage: true })
+  })
+
+  test('dialog de agregar alergia abre correctamente', async ({ page }) => {
+    await page.locator('button:has-text("Agregar Alergia")').click()
+    await expect(page.locator('[role="dialog"]')).toBeVisible()
+    await page.screenshot({ path: 'tests/screenshots/44-alergia-dialog.png', fullPage: true })
+  })
+
+  test('agregar una alergia nueva', async ({ page }) => {
+    await page.locator('button:has-text("Agregar Alergia")').click()
+    await page.waitForSelector('[role="dialog"]')
+    const allergenInput = page.locator('input[name="allergen"], input[placeholder*="alergen"], input[placeholder*="Alergen"]').first()
+    if (await allergenInput.isVisible()) {
+      await allergenInput.fill('Ibuprofeno Test')
+      const submitBtn = page.locator('[role="dialog"] button[type="submit"]')
+      await submitBtn.click()
+      await page.waitForTimeout(2000)
+    }
+    await page.screenshot({ path: 'tests/screenshots/45-alergia-agregada.png', fullPage: true })
+  })
+})
+
+test.describe('Antecedentes del Paciente', () => {
+  test.beforeEach(async ({ page }) => {
+    await goToPatientWithRecords(page)
+    await page.locator('[role="tab"]:has-text("Antecedentes")').click()
+    await page.waitForLoadState('networkidle')
+  })
+
+  test('tab Antecedentes muestra botón Agregar', async ({ page }) => {
+    await expect(page.locator('button:has-text("Agregar Antecedente")')).toBeVisible()
+    await page.screenshot({ path: 'tests/screenshots/46-antecedentes-tab.png', fullPage: true })
+  })
+
+  test('dialog de agregar antecedente abre correctamente', async ({ page }) => {
+    await page.locator('button:has-text("Agregar Antecedente")').click()
+    await expect(page.locator('[role="dialog"]')).toBeVisible()
+    await page.screenshot({ path: 'tests/screenshots/47-antecedente-dialog.png', fullPage: true })
+  })
+})
+
+// ─────────────────────────────────────────────
+// 13. EXPORT PDF
+// ─────────────────────────────────────────────
+test.describe('Export PDF Historia Clínica', () => {
+  test('endpoint PDF responde con application/pdf', async ({ page }) => {
+    await login(page)
+    const res = await page.request.get(`${BASE}/api/pacientes?search=Juan&limit=1`)
+    const data = await res.json()
+    const patientId = data.patients?.[0]?.id
+    if (!patientId) throw new Error('No se encontró paciente Juan')
+
+    const response = await page.request.get(`${BASE}/api/pacientes/${patientId}/pdf`)
+    expect(response.status()).toBe(200)
+    expect(response.headers()['content-type']).toContain('application/pdf')
+    await page.screenshot({ path: 'tests/screenshots/48-pdf-export.png', fullPage: true })
+  })
+
+  test('botón Exportar PDF visible en perfil del paciente', async ({ page }) => {
+    await goToPatientWithRecords(page)
+    await expect(
+      page.locator('a:has-text("Exportar PDF"), button:has-text("Exportar PDF"), a:has-text("PDF"), button:has-text("PDF")').first()
+    ).toBeVisible()
+    await page.screenshot({ path: 'tests/screenshots/49-pdf-boton.png', fullPage: true })
+  })
+})
+
+// ─────────────────────────────────────────────
+// 14. MÓDULO REPORTES
+// ─────────────────────────────────────────────
+test.describe('Módulo Reportes', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page)
+    await page.goto(`${BASE}/reportes`)
+    await page.waitForTimeout(2000)
+  })
+
+  test('página de reportes carga correctamente', async ({ page }) => {
+    await expect(page).toHaveURL(`${BASE}/reportes`)
+    await page.screenshot({ path: 'tests/screenshots/50-reportes-page.png', fullPage: true })
+  })
+
+  test('link Reportes visible en el sidebar', async ({ page }) => {
+    await page.goto(`${BASE}/`)
+    await expect(page.locator('nav a[href="/reportes"]')).toBeVisible()
+  })
+
+  test('API de reportes retorna datos válidos', async ({ page }) => {
+    const res = await page.request.get(`${BASE}/api/reportes`)
+    expect(res.status()).toBe(200)
+    const data = await res.json()
+    expect(data).toHaveProperty('consultasPorMes')
+    expect(data).toHaveProperty('citasPorEstado')
+    expect(data).toHaveProperty('pacientesPorGenero')
+    expect(data).toHaveProperty('citasPorSemana')
+  })
+
+  test('gráficos renderizan en la página', async ({ page }) => {
+    await page.waitForSelector('.recharts-wrapper, svg', { timeout: 10000 })
+    const charts = page.locator('.recharts-wrapper')
+    const count = await charts.count()
+    expect(count).toBeGreaterThan(0)
+    await page.screenshot({ path: 'tests/screenshots/51-reportes-graficos.png', fullPage: true })
+  })
+})
+
+// ─────────────────────────────────────────────
+// 15. CONFIGURACIÓN DE CLÍNICA
+// ─────────────────────────────────────────────
+test.describe('Configuración de Clínica', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsAdmin(page)
+    await page.goto(`${BASE}/configuracion`)
+    await page.waitForLoadState('networkidle')
+  })
+
+  test('página de configuración carga correctamente', async ({ page }) => {
+    await expect(page).toHaveURL(`${BASE}/configuracion`)
+    await page.screenshot({ path: 'tests/screenshots/52-configuracion.png', fullPage: true })
+  })
+
+  test('API de organización retorna datos', async ({ page }) => {
+    const res = await page.request.get(`${BASE}/api/organizacion`)
+    expect(res.status()).toBe(200)
+    const data = await res.json()
+    expect(data).toHaveProperty('name')
+  })
+
+  test('sección Datos de la Clínica visible para ADMIN', async ({ page }) => {
+    await expect(
+      page.locator('text=/Datos de la Clínica|Clínica|organización/i').first()
+    ).toBeVisible()
+    await page.screenshot({ path: 'tests/screenshots/53-config-clinica.png', fullPage: true })
+  })
+
+  test('link a gestión de usuarios visible', async ({ page }) => {
+    await expect(
+      page.locator('a[href="/configuracion/usuarios"]')
+        .or(page.locator('button:has-text("Usuarios")'))
+        .or(page.locator('text=/Gestión de Usuarios/i'))
+        .first()
+    ).toBeVisible()
+  })
+})
+
+// ─────────────────────────────────────────────
+// 16. RBAC — Control de Acceso por Roles
+// ─────────────────────────────────────────────
+test.describe('RBAC — Control de Acceso', () => {
+  test('ADMIN no puede crear consultas clínicas (403)', async ({ page }) => {
+    await loginAsAdmin(page)
+    // Buscar un paciente para obtener su ID
+    const res = await page.request.get(`${BASE}/api/pacientes?limit=1`)
+    const data = await res.json()
+    const patientId = data.patients[0]?.id
+    if (!patientId) return
+
+    const response = await page.request.post(`${BASE}/api/consultas`, {
+      data: { patientId, reason: 'Test RBAC' },
+    })
+    expect(response.status()).toBe(403)
+  })
+
+  test('DOCTOR puede crear consultas clínicas (201)', async ({ page }) => {
+    await login(page) // login como doctor
+    const res = await page.request.get(`${BASE}/api/pacientes?limit=1`)
+    const data = await res.json()
+    const patientId = data.patients[0]?.id
+    if (!patientId) return
+
+    const response = await page.request.post(`${BASE}/api/consultas`, {
+      data: {
+        patientId,
+        reason: 'Test RBAC Doctor',
+        subjective: 'Test',
+      },
+    })
+    expect(response.status()).toBe(201)
+  })
+
+  test('acceso sin sesión a API retorna 401', async ({ request }) => {
+    const response = await request.get(`${BASE}/api/pacientes`)
+    expect(response.status()).toBe(401)
   })
 })

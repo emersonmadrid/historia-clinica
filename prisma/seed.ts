@@ -6,53 +6,71 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Seeding database...')
 
+  // Create organization
+  const organization = await prisma.organization.upsert({
+    where: { ruc: '20123456789' },
+    update: {},
+    create: {
+      name: 'Feliz Horizonte',
+      ruc: '20123456789',
+      address: 'Av. Salaverry 1234, Jesús María',
+      phone: '01-4321234',
+    },
+  })
+
+  console.log('Organization created:', organization.name)
+
   // Create users
   const adminPassword = await bcrypt.hash('admin1234', 10)
   const doctorPassword = await bcrypt.hash('demo1234', 10)
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@clinica.com' },
-    update: {},
+    update: { organizationId: organization.id },
     create: {
       name: 'Administrador',
       email: 'admin@clinica.com',
       password: adminPassword,
       role: 'ADMIN',
+      organizationId: organization.id,
     },
   })
 
   const doctor1 = await prisma.user.upsert({
     where: { email: 'doctor@clinica.com' },
-    update: {},
+    update: { organizationId: organization.id },
     create: {
       name: 'Dr. Carlos Mendoza',
       email: 'doctor@clinica.com',
       password: doctorPassword,
       role: 'DOCTOR',
       speciality: 'Medicina General',
+      organizationId: organization.id,
     },
   })
 
   const doctor2 = await prisma.user.upsert({
     where: { email: 'dra.garcia@clinica.com' },
-    update: {},
+    update: { organizationId: organization.id },
     create: {
       name: 'Dra. Ana García',
       email: 'dra.garcia@clinica.com',
       password: await bcrypt.hash('demo1234', 10),
       role: 'DOCTOR',
       speciality: 'Pediatría',
+      organizationId: organization.id,
     },
   })
 
   const nurse = await prisma.user.upsert({
     where: { email: 'enfermera@clinica.com' },
-    update: {},
+    update: { organizationId: organization.id },
     create: {
       name: 'María Torres',
       email: 'enfermera@clinica.com',
       password: await bcrypt.hash('demo1234', 10),
       role: 'NURSE',
+      organizationId: organization.id,
     },
   })
 
@@ -61,7 +79,7 @@ async function main() {
   // Create patients
   const patient1 = await prisma.patient.upsert({
     where: { documentNumber: '12345678' },
-    update: {},
+    update: { organizationId: organization.id },
     create: {
       firstName: 'Juan Carlos',
       lastName: 'Pérez López',
@@ -79,12 +97,13 @@ async function main() {
       emergencyContactName: 'María Pérez',
       emergencyContactPhone: '999333444',
       emergencyContactRel: 'Esposa',
+      organizationId: organization.id,
     },
   })
 
   const patient2 = await prisma.patient.upsert({
     where: { documentNumber: '87654321' },
-    update: {},
+    update: { organizationId: organization.id },
     create: {
       firstName: 'María Elena',
       lastName: 'González Ríos',
@@ -102,12 +121,13 @@ async function main() {
       emergencyContactName: 'Roberto González',
       emergencyContactPhone: '988555666',
       emergencyContactRel: 'Padre',
+      organizationId: organization.id,
     },
   })
 
   const patient3 = await prisma.patient.upsert({
     where: { documentNumber: '45678912' },
-    update: {},
+    update: { organizationId: organization.id },
     create: {
       firstName: 'Roberto',
       lastName: 'Flores Sánchez',
@@ -121,12 +141,13 @@ async function main() {
       bloodType: 'B_POS',
       maritalStatus: 'DIVORCED',
       occupation: 'Comerciante',
+      organizationId: organization.id,
     },
   })
 
   const patient4 = await prisma.patient.upsert({
     where: { documentNumber: '65432187' },
-    update: {},
+    update: { organizationId: organization.id },
     create: {
       firstName: 'Carmen Rosa',
       lastName: 'Vargas Chávez',
@@ -144,6 +165,7 @@ async function main() {
       emergencyContactName: 'Luis Vargas',
       emergencyContactPhone: '966777888',
       emergencyContactRel: 'Hijo',
+      organizationId: organization.id,
     },
   })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,9 +8,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, Search } from 'lucide-react'
 import { toast } from '@/hooks/useToast'
+import { useDebounce } from '@/hooks/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -20,6 +20,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { FormField } from '@/components/shared/FormField'
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
+import type { Prisma } from '@prisma/client'
 
 const schema = z.object({
   patientId: z.string().min(1, 'Paciente requerido'),
@@ -32,50 +35,13 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
-interface Patient {
-  id: string
-  firstName: string
-  lastName: string
-  documentNumber: string
-}
+type Patient = Prisma.PatientGetPayload<{
+  select: { id: true; firstName: true; lastName: true; documentNumber: true }
+}>
 
-interface Doctor {
-  id: string
-  name: string
-  speciality: string | null
-}
-
-function FormField({
-  label,
-  error,
-  required,
-  children,
-}: {
-  label: string
-  error?: string
-  required?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label>
-        {label}
-        {required && <span className="ml-1 text-red-500">*</span>}
-      </Label>
-      {children}
-      {error && <p className="text-xs text-red-600">{error}</p>}
-    </div>
-  )
-}
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay)
-    return () => clearTimeout(timer)
-  }, [value, delay])
-  return debouncedValue
-}
+type Doctor = Prisma.UserGetPayload<{
+  select: { id: true; name: true; speciality: true }
+}>
 
 export default function NuevaCitaPage() {
   const router = useRouter()
@@ -178,7 +144,6 @@ export default function NuevaCitaPage() {
         </div>
       </div>
 
-
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
@@ -268,18 +233,12 @@ export default function NuevaCitaPage() {
 
             {/* Date and Time */}
             <FormField label="Fecha y Hora" required error={errors.dateTime?.message}>
-              <Input
-                type="datetime-local"
-                {...register('dateTime')}
-              />
+              <Input type="datetime-local" {...register('dateTime')} />
             </FormField>
 
             {/* Duration */}
             <FormField label="Duración" error={errors.duration?.message}>
-              <Select
-                defaultValue="30"
-                onValueChange={v => setValue('duration', parseInt(v))}
-              >
+              <Select defaultValue="30" onValueChange={v => setValue('duration', parseInt(v))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -320,13 +279,7 @@ export default function NuevaCitaPage() {
           </Button>
           <Button type="submit" disabled={isLoading}>
             {isLoading ? (
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Guardando...
-              </span>
+              <LoadingSpinner label="Guardando Cita..." />
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />

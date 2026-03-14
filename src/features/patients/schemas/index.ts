@@ -1,0 +1,43 @@
+import { z } from 'zod'
+
+export const createPatientSchema = z.object({
+  firstName: z.string().min(1, 'Nombre requerido'),
+  lastName: z.string().min(1, 'Apellido requerido'),
+  documentType: z.enum(['DNI', 'CE', 'PASSPORT', 'RUC']),
+  documentNumber: z.string().min(1, 'Número de documento requerido'),
+  birthDate: z.string().min(1, 'Fecha de nacimiento requerida'),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  bloodType: z.enum(['A_POS', 'A_NEG', 'B_POS', 'B_NEG', 'AB_POS', 'AB_NEG', 'O_POS', 'O_NEG']).optional(),
+  maritalStatus: z.enum(['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED', 'COHABITANT']).optional(),
+  occupation: z.string().optional(),
+  insuranceNumber: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: z.string().optional(),
+  emergencyContactRel: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export const updatePatientSchema = z.object({
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  documentType: z.enum(['DNI', 'CE', 'PASSPORT', 'RUC']).optional(),
+  documentNumber: z.string().min(1).optional(),
+  birthDate: z.string().optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
+  phone: z.string().optional().nullable(),
+  email: z.string().email().optional().nullable().or(z.literal('')),
+  address: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  bloodType: z.enum(['A_POS', 'A_NEG', 'B_POS', 'B_NEG', 'AB_POS', 'AB_NEG', 'O_POS', 'O_NEG']).optional().nullable(),
+  maritalStatus: z.enum(['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED', 'COHABITANT']).optional().nullable(),
+  occupation: z.string().optional().nullable(),
+  insuranceNumber: z.string().optional().nullable(),
+  emergencyContactName: z.string().optional().nullable(),
+  emergencyContactPhone: z.string().optional().nullable(),
+  emergencyContactRel: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+})

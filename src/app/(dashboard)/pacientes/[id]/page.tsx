@@ -31,8 +31,11 @@ import {
   AlertTriangle,
   FileText,
   Pencil,
+  Download,
 } from 'lucide-react'
 import { DeletePatientButton } from './DeletePatientButton'
+import { AllergyManager } from './AllergyManager'
+import { BackgroundManager } from './BackgroundManager'
 
 async function getPatient(id: string) {
   const patient = await prisma.patient.findUnique({
@@ -113,6 +116,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" size="sm" asChild>
+                <a href={`/api/pacientes/${patient.id}/pdf`} target="_blank" rel="noopener noreferrer">
+                  <Download className="mr-1.5 h-4 w-4" />
+                  Exportar PDF
+                </a>
+              </Button>
               <DeletePatientButton patientId={patient.id} patientName={`${patient.firstName} ${patient.lastName}`} />
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/pacientes/${patient.id}/editar`}>
@@ -209,40 +218,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         {/* Antecedentes */}
         <TabsContent value="antecedentes" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Antecedentes Médicos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {patient.medicalBackgrounds.length === 0 ? (
-                <p className="text-sm text-slate-400 py-4 text-center">No hay antecedentes registrados</p>
-              ) : (
-                <div className="space-y-6">
-                  {(['PERSONAL', 'FAMILY', 'SURGICAL', 'PHARMACOLOGICAL', 'OBSTETRIC'] as const).map((type) => {
-                    const items = patient.medicalBackgrounds.filter((b) => b.type === type)
-                    if (items.length === 0) return null
-                    return (
-                      <div key={type}>
-                        <h4 className="text-sm font-semibold text-slate-700 mb-2">
-                          {backgroundTypeLabel(type)}
-                        </h4>
-                        <div className="space-y-2">
-                          {items.map((bg) => (
-                            <div key={bg.id} className="rounded-lg border border-slate-100 p-3 bg-slate-50">
-                              <p className="text-sm text-slate-900">{bg.description}</p>
-                              {bg.date && (
-                                <p className="text-xs text-slate-500 mt-1">{formatDate(bg.date)}</p>
-                              )}
-                              {bg.notes && (
-                                <p className="text-xs text-slate-500 mt-1 italic">{bg.notes}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+            <CardContent className="pt-6">
+              <BackgroundManager
+                patientId={patient.id}
+                backgrounds={patient.medicalBackgrounds.map((bg) => ({
+                  id: bg.id,
+                  type: bg.type,
+                  description: bg.description,
+                  date: bg.date ? bg.date.toISOString() : null,
+                  notes: bg.notes,
+                }))}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -250,34 +236,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         {/* Alergias */}
         <TabsContent value="alergias" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Alergias Registradas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {patient.allergies.length === 0 ? (
-                <p className="text-sm text-slate-400 py-4 text-center">No hay alergias registradas</p>
-              ) : (
-                <div className="space-y-3">
-                  {patient.allergies.map((allergy) => (
-                    <div key={allergy.id} className="flex items-start gap-3 rounded-lg border border-slate-100 p-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-slate-900 text-sm">{allergy.allergen}</span>
-                          <Badge variant={severityVariant(allergy.severity)}>
-                            {severityLabel(allergy.severity)}
-                          </Badge>
-                        </div>
-                        {allergy.reaction && (
-                          <p className="text-sm text-slate-600">Reacción: {allergy.reaction}</p>
-                        )}
-                        {allergy.notes && (
-                          <p className="text-xs text-slate-500 mt-1">{allergy.notes}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <CardContent className="pt-6">
+              <AllergyManager
+                patientId={patient.id}
+                allergies={patient.allergies.map((a) => ({
+                  id: a.id,
+                  allergen: a.allergen,
+                  reaction: a.reaction,
+                  severity: a.severity,
+                  notes: a.notes,
+                }))}
+              />
             </CardContent>
           </Card>
         </TabsContent>

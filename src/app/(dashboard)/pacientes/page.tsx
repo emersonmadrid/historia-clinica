@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useDebounce } from '@/hooks/useDebounce'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
@@ -18,22 +19,15 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { calculateAge, formatDate, formatDateTime, documentTypeLabel, genderLabel } from '@/lib/utils'
+import type { Prisma } from '@prisma/client'
 
-interface Patient {
-  id: string
-  firstName: string
-  lastName: string
-  documentType: string
-  documentNumber: string
-  birthDate: string
-  gender: string
-  phone: string | null
-  email: string | null
-  active: boolean
-  clinicalRecords: { date: string }[]
-  appointments: { dateTime: string; status: string }[]
-  _count: { clinicalRecords: number }
-}
+type Patient = Prisma.PatientGetPayload<{
+  include: {
+    clinicalRecords: { select: { date: true } }
+    appointments: { select: { dateTime: true; status: true } }
+    _count: { select: { clinicalRecords: true } }
+  }
+}>
 
 interface PatientsResponse {
   patients: Patient[]
@@ -44,15 +38,6 @@ interface PatientsResponse {
 
 type SortBy = 'name' | 'age' | 'lastVisit' | 'createdAt'
 type SortOrder = 'asc' | 'desc'
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay)
-    return () => clearTimeout(timer)
-  }, [value, delay])
-  return debouncedValue
-}
 
 function SortButton({
   label,

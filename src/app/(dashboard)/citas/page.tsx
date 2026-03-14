@@ -18,16 +18,14 @@ import {
 } from '@/components/ui/dialog'
 import { appointmentStatusLabel, cn } from '@/lib/utils'
 import { toast } from '@/hooks/useToast'
+import type { Prisma } from '@prisma/client'
 
-interface Appointment {
-  id: string
-  dateTime: string
-  duration: number
-  status: string
-  reason: string
-  patient: { id: string; firstName: string; lastName: string; phone: string | null }
-  doctor: { id: string; name: string; speciality: string | null }
-}
+type Appointment = Prisma.AppointmentGetPayload<{
+  include: {
+    patient: { select: { id: true; firstName: true; lastName: true; phone: true } }
+    doctor: { select: { id: true; name: true; speciality: true } }
+  }
+}>
 
 function statusColor(status: string) {
   const map: Record<string, string> = {

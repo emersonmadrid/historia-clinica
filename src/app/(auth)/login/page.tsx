@@ -22,6 +22,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showForgot, setShowForgot] = useState(false)
 
   const {
     register,
@@ -100,7 +101,16 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Contraseña</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(true)}
+                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -150,6 +160,24 @@ export default function LoginPage() {
           Sistema seguro para profesionales de la salud
         </p>
       </div>
+
+      {/* Modal olvidé contraseña */}
+      {showForgot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
+            <h3 className="text-base font-semibold text-slate-900 mb-2">Recuperar contraseña</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Contacta al administrador del sistema para restablecer tu contraseña.
+            </p>
+            <button
+              onClick={() => setShowForgot(false)}
+              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

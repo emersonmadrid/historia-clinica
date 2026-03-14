@@ -10,6 +10,7 @@ import {
   LogOut,
   Stethoscope,
   Settings,
+  BarChart2,
 } from 'lucide-react'
 import { cn, getInitials, roleLabel } from '@/lib/utils'
 
@@ -27,6 +28,7 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/pacientes', label: 'Pacientes', icon: Users },
   { href: '/citas', label: 'Citas', icon: Calendar },
+  { href: '/reportes', label: 'Reportes', icon: BarChart2 },
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 

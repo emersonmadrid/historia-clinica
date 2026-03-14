@@ -1,67 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { assertAuth } from '@/lib/permissions'
+import { handleApiError } from '@/lib/errors'
 import { createCalendarEvent } from '@/lib/google-calendar'
 import { sendAppointmentConfirmation } from '@/lib/mailer'
-import { z } from 'zod'
+import { createAppointmentSchema } from '@/features/appointments/schemas'
+import { listAppointments } from '@/features/appointments/queries'
 import { randomBytes } from 'crypto'
-
-const createAppointmentSchema = z.object({
-  patientId: z.string().min(1, 'Paciente requerido'),
-  doctorId: z.string().min(1, 'Doctor requerido'),
-  dateTime: z.string().min(1, 'Fecha y hora requerida'),
-  duration: z.number().int().min(15).max(120).default(30),
-  reason: z.string().min(1, 'Motivo requerido'),
-  notes: z.string().optional().nullable(),
-})
 
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    assertAuth(session)
 
     const { searchParams } = new URL(request.url)
-    const dateStr = searchParams.get('date')
-    const doctorId = searchParams.get('doctorId')
+    const date = searchParams.get('date') ?? undefined
+    const doctorId = searchParams.get('doctorId') ?? undefined
 
-    const where: Record<string, unknown> = {}
-
-    if (dateStr) {
-      // Parse as local date to avoid UTC offset shifting (e.g. "2026-03-04" → local midnight)
-      const [y, m, d] = dateStr.split('-').map(Number)
-      const startOfDay = new Date(y, m - 1, d)
-      const endOfDay = new Date(y, m - 1, d + 1)
-      where.dateTime = { gte: startOfDay, lt: endOfDay }
-    }
-
-    if (doctorId) {
-      where.doctorId = doctorId
-    }
-
-    const appointments = await prisma.appointment.findMany({
-      where,
-      orderBy: { dateTime: 'asc' },
-      include: {
-        patient: { select: { id: true, firstName: true, lastName: true, phone: true } },
-        doctor: { select: { id: true, name: true, speciality: true } },
-      },
-    })
+    const appointments = await listAppointments({ date, doctorId })
 
     return NextResponse.json(appointments)
   } catch (error) {
-    console.error('GET /api/citas error:', error)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    assertAuth(session)
 
     const body = await request.json()
     const parsed = createAppointmentSchema.safeParse(body)
@@ -85,7 +53,7 @@ export async function POST(request: NextRequest) {
       select: { dateTime: true, duration: true },
     })
 
-    const hasConflict = candidates.some(apt => {
+    const hasConflict = candidates.some((apt) => {
       const existingEnd = new Date(apt.dateTime.getTime() + apt.duration * 60 * 1000)
       return existingEnd > newStart
     })
@@ -149,11 +117,10 @@ export async function POST(request: NextRequest) {
         }
       }),
       sendAppointmentConfirmation(emailData),
-    ]).catch(() => {})
+    ]).catch((e) => console.error('[post-appointment-side-effects]', e))
 
     return NextResponse.json(appointment, { status: 201 })
   } catch (error) {
-    console.error('POST /api/citas error:', error)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    return handleApiError(error)
   }
 }

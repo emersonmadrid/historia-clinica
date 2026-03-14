@@ -10,7 +10,6 @@ import { ArrowLeft, Save } from 'lucide-react'
 import { toast } from '@/hooks/useToast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -20,6 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { FormField } from '@/components/shared/FormField'
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 
 const schema = z.object({
   firstName: z.string().min(1, 'Nombre requerido'),
@@ -43,29 +44,6 @@ const schema = z.object({
 })
 
 type FormData = z.infer<typeof schema>
-
-function FormField({
-  label,
-  error,
-  required,
-  children,
-}: {
-  label: string
-  error?: string
-  required?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label>
-        {label}
-        {required && <span className="ml-1 text-red-500">*</span>}
-      </Label>
-      {children}
-      {error && <p className="text-xs text-red-600">{error}</p>}
-    </div>
-  )
-}
 
 export default function NuevoPacientePage() {
   const router = useRouter()
@@ -293,13 +271,7 @@ export default function NuevoPacientePage() {
           </Button>
           <Button type="submit" disabled={isLoading}>
             {isLoading ? (
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Guardando...
-              </span>
+              <LoadingSpinner />
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
