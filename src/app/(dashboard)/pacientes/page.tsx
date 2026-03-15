@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Search, Plus, ChevronLeft, ChevronRight, UserRound,
   MoreHorizontal, Pencil, Calendar, ArrowUpDown, ArrowUp, ArrowDown,
-  Phone, Clock,
+  Phone, Clock, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -138,8 +138,17 @@ export default function PacientesPage() {
             setSearch(e.target.value)
             setPage(1)
           }}
-          className="pl-10"
+          className={`pl-10 ${search ? 'pr-10' : ''}`}
         />
+        {search && (
+          <button
+            type="button"
+            onClick={() => { setSearch(''); setPage(1) }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Table */}

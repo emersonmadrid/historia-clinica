@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { prescriptionItemSchema } from '@/features/prescriptions/schemas'
 
 export const vitalSignsSchema = z.object({
   height: z.number().optional().nullable(),
@@ -21,6 +22,11 @@ export const diagnosisSchema = z.object({
   notes: z.string().optional().nullable(),
 })
 
+export const prescriptionInConsultationSchema = z.object({
+  notes: z.string().optional(),
+  items: z.array(prescriptionItemSchema).min(1),
+})
+
 export const createConsultationSchema = z.object({
   patientId: z.string().min(1, 'Paciente requerido'),
   reason: z.string().min(1, 'Motivo de consulta requerido'),
@@ -31,4 +37,5 @@ export const createConsultationSchema = z.object({
   notes: z.string().optional().nullable(),
   vitalSigns: vitalSignsSchema.optional(),
   diagnoses: z.array(diagnosisSchema).optional(),
+  prescriptions: z.array(prescriptionInConsultationSchema).optional(),
 })

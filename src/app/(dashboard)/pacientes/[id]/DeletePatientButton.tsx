@@ -14,7 +14,15 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/useToast'
 
-export function DeletePatientButton({ patientId, patientName }: { patientId: string; patientName: string }) {
+export function DeletePatientButton({
+  patientId,
+  patientName,
+  menuItem = false,
+}: {
+  patientId: string
+  patientName: string
+  menuItem?: boolean
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -35,10 +43,20 @@ export function DeletePatientButton({ patientId, patientName }: { patientId: str
 
   return (
     <>
-      <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50" onClick={() => setOpen(true)}>
-        <Trash2 className="mr-1.5 h-4 w-4" />
-        Eliminar
-      </Button>
+      {menuItem ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-2 px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-sm"
+        >
+          <Trash2 className="h-4 w-4" />
+          Eliminar paciente
+        </button>
+      ) : (
+        <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50" onClick={() => setOpen(true)}>
+          <Trash2 className="mr-1.5 h-4 w-4" />
+          Eliminar
+        </Button>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>

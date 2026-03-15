@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Users, Calendar, ClipboardList, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { formatDateTime, formatDate, appointmentStatusLabel } from '@/lib/utils'
@@ -140,6 +141,22 @@ export default async function DashboardPage() {
             </Card>
           )
         })}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-3">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/pacientes/nuevo">
+            <Users className="mr-2 h-4 w-4" />
+            Nuevo Paciente
+          </Link>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/citas/nueva">
+            <Calendar className="mr-2 h-4 w-4" />
+            Nueva Cita
+          </Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

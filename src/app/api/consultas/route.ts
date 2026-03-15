@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Datos inválidos', details: parsed.error.flatten() }, { status: 400 })
     }
 
-    const { vitalSigns, diagnoses, ...consultationData } = parsed.data
+    const { vitalSigns, diagnoses, prescriptions, ...consultationData } = parsed.data
     const doctorId = session.user.id
 
     const record = await prisma.clinicalRecord.create({
@@ -81,6 +81,30 @@ export async function POST(request: NextRequest) {
         diagnoses: true,
       },
     })
+
+    // Create prescriptions atomically
+    if (prescriptions && prescriptions.length > 0) {
+      for (const rx of prescriptions) {
+        await prisma.prescription.create({
+          data: {
+            consultationId: record.id,
+            patientId: consultationData.patientId,
+            doctorId,
+            notes: rx.notes || null,
+            items: {
+              create: rx.items.map((item) => ({
+                medication: item.medication,
+                dosage: item.dosage,
+                frequency: item.frequency,
+                duration: item.duration,
+                quantity: item.quantity || null,
+                instructions: item.instructions || null,
+              })),
+            },
+          },
+        })
+      }
+    }
 
     return NextResponse.json(record, { status: 201 })
   } catch (error) {

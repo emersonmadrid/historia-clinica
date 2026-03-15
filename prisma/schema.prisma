@@ -109,6 +109,8 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  licenseNumber String?
+
   googleAccessToken  String?
   googleRefreshToken String?
   googleTokenExpiry  DateTime?
@@ -116,8 +118,10 @@ model User {
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
-  consultations ClinicalRecord[]
-  appointments  Appointment[]
+  consultations     ClinicalRecord[]
+  appointments      Appointment[]
+  uploadedDocuments PatientDocument[]
+  prescriptions     Prescription[]
 
   @@map("users")
 }
@@ -155,8 +159,27 @@ model Patient {
   appointments       Appointment[]
   allergies          Allergy[]
   medicalBackgrounds MedicalBackground[]
+  documents          PatientDocument[]
+  prescriptions      Prescription[]
 
   @@map("patients")
+}
+
+model PatientDocument {
+  id           String   @id @default(cuid())
+  patientId    String
+  name         String
+  description  String?
+  fileUrl      String
+  fileSize     Int
+  mimeType     String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  patient    Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation(fields: [uploadedById], references: [id])
+
+  @@map("patient_documents")
 }
 
 model ClinicalRecord {
@@ -173,10 +196,11 @@ model ClinicalRecord {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  patient    Patient      @relation(fields: [patientId], references: [id])
-  doctor     User         @relation(fields: [doctorId], references: [id])
-  vitalSigns VitalSigns?
-  diagnoses  Diagnosis[]
+  patient       Patient        @relation(fields: [patientId], references: [id])
+  doctor        User           @relation(fields: [doctorId], references: [id])
+  vitalSigns    VitalSigns?
+  diagnoses     Diagnosis[]
+  prescriptions Prescription[]
 
   @@map("clinical_records")
 }
@@ -244,6 +268,39 @@ model MedicalBackground {
   patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("medical_backgrounds")
+}
+
+model Prescription {
+  id             String   @id @default(cuid())
+  consultationId String
+  patientId      String
+  doctorId       String
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  consultation ClinicalRecord     @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  patient      Patient            @relation(fields: [patientId], references: [id])
+  doctor       User               @relation(fields: [doctorId], references: [id])
+  items        PrescriptionItem[]
+
+  @@map("prescriptions")
+}
+
+model PrescriptionItem {
+  id             String  @id @default(cuid())
+  prescriptionId String
+  medication     String
+  dosage         String
+  frequency      String
+  duration       String
+  quantity       String?
+  instructions   String?
+  createdAt      DateTime @default(now())
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@map("prescription_items")
 }
 
 model Appointment {
