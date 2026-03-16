@@ -298,7 +298,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
   }, [isDirty])
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 w-full max-w-4xl">
       <Breadcrumb items={[
         { label: 'Pacientes', href: '/pacientes' },
         { label: patientName || 'Paciente', href: `/pacientes/${patientId}` },
