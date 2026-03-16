@@ -373,12 +373,12 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
             <CardTitle className="text-base">Signos Vitales</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               <div className="col-span-2 grid grid-cols-2 gap-2">
-                <FormField label="PA Sistólica (mmHg)">
+                <FormField label="PA Sistólica">
                   <Input type="number" placeholder="120" {...register('bloodPressureSys')} />
                 </FormField>
-                <FormField label="PA Diastólica (mmHg)">
+                <FormField label="PA Diastólica">
                   <Input type="number" placeholder="80" {...register('bloodPressureDia')} />
                 </FormField>
               </div>
@@ -391,7 +391,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
                 <Input type="number" placeholder="16" {...register('respiratoryRate')} />
               </FormField>
 
-              <FormField label="Temperatura (°C)">
+              <FormField label="Temperatura °C">
                 <Input type="number" step="0.1" placeholder="36.5" {...register('temperature')} />
               </FormField>
 
@@ -409,7 +409,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
 
               <FormField label="IMC">
                 <div className="flex h-10 w-full items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
-                  {bmi ? `${bmi} kg/m²` : <span className="text-slate-400">Auto-calculado</span>}
+                  {bmi ? `${bmi} kg/m²` : <span className="text-slate-400">Auto</span>}
                 </div>
               </FormField>
 
@@ -422,17 +422,17 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
 
         {/* SOAP */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Formato SOAP</CardTitle>
             <button
               type="button"
               onClick={handleGenerateSOAP}
               disabled={soapLoading}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {soapLoading
-                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Generando...</>
-                : <><Sparkles className="h-3.5 w-3.5" />Generar con IA</>
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /><span className="hidden sm:inline">Generando...</span></>
+                : <><Sparkles className="h-3.5 w-3.5" /><span className="hidden sm:inline">Generar con IA</span><span className="sm:hidden">IA</span></>
               }
             </button>
           </CardHeader>
@@ -648,7 +648,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
         {/* Sticky save bar */}
         <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 border-t border-slate-200 bg-white/95 backdrop-blur px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between max-w-4xl">
-            <p className="text-sm text-slate-500">Recuerde verificar todos los campos antes de guardar</p>
+            <p className="text-sm text-slate-500 hidden sm:block">Recuerde verificar todos los campos antes de guardar</p>
             <div className="flex items-center gap-3">
               <Button variant="outline" type="button" asChild>
                 <Link href={`/pacientes/${patientId}`}>Cancelar</Link>
