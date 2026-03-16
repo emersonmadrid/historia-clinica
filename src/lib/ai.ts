@@ -93,3 +93,69 @@ Sin markdown, sin bloques de código, solo el JSON.`,
     plan: parsed.plan ?? '',
   }
 }
+
+export interface PatientBriefing {
+  situation: string   // estado actual del paciente en 2-3 oraciones
+  lastVisit: string   // qué pasó en la última consulta
+  pending: string     // cosas pendientes mencionadas en consultas anteriores
+  alerts: string      // patrones preocupantes si los hay, vacío si no
+}
+
+export async function generateBriefing(params: {
+  patientName: string
+  age: number
+  gender: string
+  allergies: string[]
+  activeConditions: string[]
+  currentMedications: string[]
+  consultations: {
+    date: string
+    reason: string
+    assessment: string | null
+    plan: string | null
+    diagnoses: string[]
+  }[]
+}): Promise<PatientBriefing> {
+  const lastConsultations = params.consultations.slice(0, 5).map((c, i) =>
+    `Consulta ${i + 1} (${c.date}): Motivo: ${c.reason}. ${c.diagnoses.length > 0 ? `Dx: ${c.diagnoses.join(', ')}.` : ''} ${c.plan ? `Plan: ${c.plan}` : ''}`
+  ).join('\n')
+
+  const context = [
+    `Paciente: ${params.patientName}, ${params.age} años, ${params.gender}`,
+    params.allergies.length > 0 ? `Alergias: ${params.allergies.join(', ')}` : null,
+    params.activeConditions.length > 0 ? `Condiciones activas: ${params.activeConditions.join(', ')}` : null,
+    params.currentMedications.length > 0 ? `Medicación actual: ${params.currentMedications.join(', ')}` : null,
+    params.consultations.length > 0 ? `\nÚltimas consultas:\n${lastConsultations}` : 'Sin consultas previas',
+  ].filter(Boolean).join('\n')
+
+  const completion = await getGroq().chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    temperature: 0.2,
+    max_tokens: 600,
+    messages: [
+      {
+        role: 'system',
+        content: `Eres un asistente clínico que prepara un briefing rápido para el médico antes de ver al paciente.
+Analiza el historial y devuelve un resumen ejecutivo útil y directo.
+Formato OBLIGATORIO — solo este JSON, nada más:
+{"situation":"...","lastVisit":"...","pending":"...","alerts":"..."}
+- situation: estado clínico actual en 1-2 oraciones, lo más relevante
+- lastVisit: resumen de la última consulta en 1 oración
+- pending: cosas que quedaron pendientes (exámenes, controles, derivaciones) en 1 oración, o vacío si no hay
+- alerts: patrones preocupantes o tendencias negativas en 1 oración, o vacío si no hay
+Sin markdown, sin bloques de código, solo el JSON.`,
+      },
+      { role: 'user', content: context },
+    ],
+  })
+
+  const raw = completion.choices[0]?.message?.content?.trim() ?? '{}'
+  const clean = raw.replace(/^```json\n?/, '').replace(/^```\n?/, '').replace(/\n?```$/, '')
+  const parsed = JSON.parse(clean)
+  return {
+    situation: parsed.situation ?? '',
+    lastVisit: parsed.lastVisit ?? '',
+    pending: parsed.pending ?? '',
+    alerts: parsed.alerts ?? '',
+  }
+}

@@ -36,6 +36,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react'
 import { DeletePatientButton } from './DeletePatientButton'
+import { PatientBriefing } from './PatientBriefing'
 import { AllergyManager } from './AllergyManager'
 import { BackgroundManager } from './BackgroundManager'
 import { DocumentManager } from './DocumentManager'
@@ -303,6 +304,12 @@ export default async function PatientPage({
           </div>
         </div>
       )}
+
+      {/* ── Briefing IA ── */}
+      <PatientBriefing
+        patientId={patient.id}
+        hasConsultations={patient.clinicalRecords.length > 0}
+      />
 
       {/* ── Tabs ── */}
       <Tabs key={activeTab} defaultValue={activeTab}>
