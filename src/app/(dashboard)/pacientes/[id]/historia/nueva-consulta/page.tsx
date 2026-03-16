@@ -4,9 +4,9 @@ import { useState, useEffect, use } from 'react'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Trash2, Save, Pill, ShieldAlert, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Save, Pill, ShieldAlert, Sparkles, Loader2, Calendar } from 'lucide-react'
 import { CIE10Input } from './CIE10Input'
 import { toast } from '@/hooks/useToast'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
@@ -95,9 +95,12 @@ function FormField({
 export default function NuevaConsultaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: patientId } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const citaId = searchParams.get('citaId')
   const [isLoading, setIsLoading] = useState(false)
   const [soapLoading, setSoapLoading] = useState(false)
   const [patientName, setPatientName] = useState('')
+  const [citaReason, setCitaReason] = useState<string | null>(null)
   const [patientAllergies, setPatientAllergies] = useState<{ allergen: string; severity: string; reaction: string | null }[]>([])
   const [patientData, setPatientData] = useState<{
     allergies: string[]
@@ -156,6 +159,20 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
       prescriptions: [],
     },
   })
+
+  // If coming from a scheduled appointment, pre-fill reason
+  useEffect(() => {
+    if (!citaId) return
+    fetch(`/api/citas/${citaId}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.reason) {
+          setCitaReason(d.reason)
+          setValue('reason', d.reason, { shouldDirty: false })
+        }
+      })
+      .catch(() => {})
+  }, [citaId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { fields: diagnosisFields, append: appendDiagnosis, remove: removeDiagnosis } = useFieldArray({
     control,
@@ -236,6 +253,15 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
         return
       }
 
+      // Si vino desde una cita, marcarla como completada
+      if (citaId) {
+        fetch(`/api/citas/${citaId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'complete' }),
+        }).catch(() => {})
+      }
+
       toast({ variant: 'success', title: 'Consulta registrada correctamente' })
       router.push(`/pacientes/${patientId}`)
       router.refresh()
@@ -312,12 +338,20 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
           </Link>
         </Button>
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Nueva Consulta</h2>
+          <h2 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Nueva Consulta</h2>
           {patientName && (
-            <p className="text-sm text-slate-500">Paciente: {patientName}</p>
+            <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>Paciente: {patientName}</p>
           )}
         </div>
       </div>
+
+      {/* Banner: cita vinculada */}
+      {citaReason && (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 flex items-center gap-2 text-sm text-sky-700">
+          <Calendar className="h-4 w-4 shrink-0" />
+          Motivo pre-cargado desde la cita agendada. Puedes modificarlo si es necesario.
+        </div>
+      )}
 
       {/* Allergy banner */}
       {patientAllergies.length > 0 && (

@@ -13,6 +13,57 @@ const updateAppointmentSchema = z.object({
   notes: z.string().optional().nullable(),
 })
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { id } = await params
+  const appointment = await prisma.appointment.findUnique({
+    where: { id },
+    include: {
+      patient: { select: { id: true, firstName: true, lastName: true } },
+      doctor: { select: { id: true, name: true } },
+    },
+  })
+  if (!appointment) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
+  return NextResponse.json(appointment)
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth()
+    if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { id } = await params
+    const { action } = await request.json()
+
+    if (action === 'arrive') {
+      const appointment = await prisma.appointment.update({
+        where: { id },
+        data: { arrivedAt: new Date() },
+      })
+      return NextResponse.json(appointment)
+    }
+
+    if (action === 'complete') {
+      const appointment = await prisma.appointment.update({
+        where: { id },
+        data: { status: 'COMPLETED' },
+      })
+      return NextResponse.json(appointment)
+    }
+
+    return NextResponse.json({ error: 'Acción inválida' }, { status: 400 })
+  } catch (error) {
+    console.error('PATCH /api/citas/[id] error:', error)
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

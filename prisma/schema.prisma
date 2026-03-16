@@ -318,6 +318,7 @@ model Appointment {
   googleEventId   String?
   rsvpToken       String?  @unique
   reminderSentAt  DateTime?
+  arrivedAt       DateTime?
 
   patient Patient @relation(fields: [patientId], references: [id])
   doctor  User    @relation(fields: [doctorId], references: [id])

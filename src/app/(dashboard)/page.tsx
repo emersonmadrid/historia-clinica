@@ -1,10 +1,10 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Users, Calendar, ClipboardList, Clock, ArrowRight, Plus } from 'lucide-react'
 import Link from 'next/link'
-import { formatDate, appointmentStatusLabel } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
+import { AgendaList } from './AgendaList'
 
 async function getDashboardData() {
   const now = new Date()
@@ -25,6 +25,7 @@ async function getDashboardData() {
         orderBy: { dateTime: 'asc' },
         take: 8,
         include: { patient: { select: { id: true, firstName: true, lastName: true } } },
+        // arrivedAt is included automatically via Prisma model
       }),
       prisma.clinicalRecord.findMany({
         orderBy: { date: 'desc' },
@@ -38,21 +39,6 @@ async function getDashboardData() {
     ])
 
   return { stats: { totalPatients, todayAppointments, monthConsultations, pendingAppointments }, upcomingAppointments, recentConsultations }
-}
-
-function statusVariant(s: string) {
-  const m: Record<string, string> = { SCHEDULED: 'secondary', CONFIRMED: 'success', CANCELLED: 'destructive', COMPLETED: 'default', NO_SHOW: 'outline' }
-  return (m[s] ?? 'secondary') as 'default' | 'secondary' | 'destructive' | 'outline' | 'success'
-}
-
-function statusDot(s: string) {
-  return {
-    CONFIRMED: '#10B981',
-    SCHEDULED: '#9CA3AF',
-    CANCELLED: '#EF4444',
-    COMPLETED: '#0EA5E9',
-    NO_SHOW: '#F59E0B',
-  }[s] ?? '#9CA3AF'
 }
 
 export default async function DashboardPage() {
@@ -170,62 +156,14 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div>
-                {/* Timeline */}
-                <div className="relative px-5">
-                  {/* Vertical line */}
-                  <div
-                    className="absolute top-2 bottom-2"
-                    style={{ left: '68px', width: '1px', backgroundColor: 'var(--border)' }}
-                  />
-                  <div className="space-y-1">
-                    {upcomingAppointments.map((apt) => {
-                      const time = new Date(apt.dateTime).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
-                      const dot = statusDot(apt.status)
-                      return (
-                        <div key={apt.id} className="flex items-center gap-3 py-1.5 group">
-                          {/* Time */}
-                          <span className="w-10 shrink-0 text-right text-xs font-mono" style={{ color: 'var(--foreground-subtle)' }}>
-                            {time}
-                          </span>
-
-                          {/* Dot */}
-                          <div className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center">
-                            <div
-                              className="h-2 w-2 rounded-full ring-2 ring-white"
-                              style={{ backgroundColor: dot }}
-                            />
-                          </div>
-
-                          {/* Row */}
-                          <div
-                            className="flex flex-1 min-w-0 items-center justify-between rounded-lg px-3 py-2 transition-colors group-hover:bg-white"
-                            style={{ backgroundColor: 'var(--background)' }}
-                          >
-                            <div className="min-w-0">
-                              <Link
-                                href={`/pacientes/${apt.patient.id}`}
-                                className="text-sm font-medium truncate block transition-colors group-hover:text-[#0EA5E9]"
-                                style={{ color: 'var(--foreground)' }}
-                              >
-                                {apt.patient.firstName} {apt.patient.lastName}
-                              </Link>
-                              {apt.reason && (
-                                <p className="text-[11px] truncate mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
-                                  {apt.reason}
-                                </p>
-                              )}
-                            </div>
-                            <Badge variant={statusVariant(apt.status)} className="ml-3 shrink-0">
-                              {appointmentStatusLabel(apt.status)}
-                            </Badge>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
+              <AgendaList
+                appointments={upcomingAppointments.map(a => ({
+                  ...a,
+                  dateTime: a.dateTime.toISOString(),
+                  arrivedAt: a.arrivedAt ? a.arrivedAt.toISOString() : null,
+                }))}
+                userRole={session?.user?.role ?? 'DOCTOR'}
+              />
             )}
           </CardContent>
         </Card>
