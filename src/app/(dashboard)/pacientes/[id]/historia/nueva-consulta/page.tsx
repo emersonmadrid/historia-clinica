@@ -110,7 +110,17 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
       .then(r => r.json())
       .then(d => {
         if (d.firstName) setPatientName(`${d.firstName} ${d.lastName}`)
-        if (d.allergies) setPatientAllergies(d.allergies)
+        if (d.allergies) {
+          // Deduplicate by allergen name
+          const seen = new Set<string>()
+          setPatientAllergies(
+            d.allergies.filter((a: { allergen: string }) => {
+              if (seen.has(a.allergen)) return false
+              seen.add(a.allergen)
+              return true
+            })
+          )
+        }
 
         // Build AI context from patient data
         const allergies = (d.allergies ?? []).map((a: { allergen: string }) => a.allergen)
@@ -426,56 +436,52 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
               }
             </button>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              label="S — Subjetivo"
-              hint="Síntomas y quejas del paciente (en primera persona)"
-            >
-              <Textarea
-                placeholder="El paciente refiere dolor en... desde hace... días. Niega fiebre..."
-                rows={3}
-                {...register('subjective')}
-              />
-            </FormField>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                label="S — Subjetivo"
+                hint="Síntomas referidos por el paciente"
+              >
+                <Textarea
+                  placeholder="El paciente refiere dolor en... desde hace... días. Niega fiebre..."
+                  rows={4}
+                  {...register('subjective')}
+                />
+              </FormField>
 
-            <Separator />
+              <FormField
+                label="O — Objetivo"
+                hint="Hallazgos del examen físico y exámenes"
+              >
+                <Textarea
+                  placeholder="Al examen: paciente en ABEG, ABEH. Piel: normocoloreada..."
+                  rows={4}
+                  {...register('objective')}
+                />
+              </FormField>
 
-            <FormField
-              label="O — Objetivo"
-              hint="Hallazgos del examen físico y resultados de exámenes"
-            >
-              <Textarea
-                placeholder="Al examen: paciente en ABEG, ABEH. Piel: normocoloreada. Abdomen: blando, depresible..."
-                rows={3}
-                {...register('objective')}
-              />
-            </FormField>
+              <FormField
+                label="A — Evaluación/Diagnóstico"
+                hint="Impresión diagnóstica"
+              >
+                <Textarea
+                  placeholder="Diagnóstico diferencial, impresión clínica..."
+                  rows={4}
+                  {...register('assessment')}
+                />
+              </FormField>
 
-            <Separator />
-
-            <FormField
-              label="A — Evaluación/Diagnóstico"
-              hint="Impresión diagnóstica"
-            >
-              <Textarea
-                placeholder="Diagnóstico diferencial, impresión clínica..."
-                rows={3}
-                {...register('assessment')}
-              />
-            </FormField>
-
-            <Separator />
-
-            <FormField
-              label="P — Plan"
-              hint="Tratamiento, indicaciones, seguimiento"
-            >
-              <Textarea
-                placeholder="1. Medicación: ...\n2. Indicaciones: ...\n3. Control en ..."
-                rows={3}
-                {...register('plan')}
-              />
-            </FormField>
+              <FormField
+                label="P — Plan"
+                hint="Tratamiento, indicaciones, seguimiento"
+              >
+                <Textarea
+                  placeholder="1. Medicación: ...\n2. Indicaciones: ...\n3. Control en ..."
+                  rows={4}
+                  {...register('plan')}
+                />
+              </FormField>
+            </div>
           </CardContent>
         </Card>
 

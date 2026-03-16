@@ -40,7 +40,7 @@ import { PatientBriefing } from './PatientBriefing'
 import { AllergyManager } from './AllergyManager'
 import { BackgroundManager } from './BackgroundManager'
 import { DocumentManager } from './DocumentManager'
-import { ConsultaCard } from './ConsultaCard'
+import { ConsultasTimeline } from './ConsultasTimeline'
 import { QuickAddAllergyButton } from './QuickAddAllergyButton'
 
 
@@ -80,8 +80,11 @@ export default async function PatientPage({
   if (!patient) notFound()
 
   const age = calculateAge(patient.birthDate)
-  const severeAllergies = patient.allergies.filter(a => a.severity === 'SEVERE')
-  const recentRecords = patient.clinicalRecords.slice(0, 3)
+  // Deduplicate allergies by allergen name (defensive against duplicate DB entries)
+  const uniqueAllergies = patient.allergies.filter(
+    (a, i, arr) => arr.findIndex(x => x.allergen === a.allergen) === i
+  )
+  const severeAllergies = uniqueAllergies.filter(a => a.severity === 'SEVERE')
   const nextAppointment = patient.appointments[0] ?? null
   const activeDiagnoses = extractActiveDiagnoses(patient.clinicalRecords)
   const recentMedications = extractRecentMedications(patient.clinicalRecords)
@@ -177,7 +180,7 @@ export default async function PatientPage({
       </div>
 
       {/* ── Ficha Clínica Activa (always visible) ── */}
-      {(activeDiagnoses.length > 0 || recentMedications.length > 0 || patient.allergies.length > 0) && (
+      {(activeDiagnoses.length > 0 || recentMedications.length > 0 || uniqueAllergies.length > 0) && (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
           <div className="border-b border-slate-100 px-4 py-2.5 bg-slate-50 flex items-center justify-between">
             <div>
@@ -197,11 +200,11 @@ export default async function PatientPage({
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Alergias Conocidas</p>
                 <QuickAddAllergyButton patientId={patient.id} />
               </div>
-              {patient.allergies.length === 0 ? (
+              {uniqueAllergies.length === 0 ? (
                 <p className="text-xs text-slate-300 italic">Sin alergias registradas</p>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
-                  {patient.allergies.map(a => (
+                  {uniqueAllergies.map(a => (
                     <span
                       key={a.id}
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border ${
@@ -313,75 +316,48 @@ export default async function PatientPage({
                 </Link>
               </Button>
             </div>
-
-            {patient.clinicalRecords.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <ClipboardList className="mx-auto h-12 w-12 text-slate-300" />
-                  <h3 className="mt-4 text-sm font-medium text-slate-900">Sin consultas registradas</h3>
-                  <p className="mt-1 text-sm text-slate-500">Registre la primera consulta de este paciente.</p>
-                  <Button asChild className="mt-4">
-                    <Link href={`/pacientes/${patient.id}/historia/nueva-consulta`}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Nueva Consulta
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="relative space-y-3">
-                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-200" />
-                {patient.clinicalRecords.map((record, index) => (
-                  <div key={record.id} className="relative pl-14">
-                    <div className="absolute left-4 flex h-5 w-5 items-center justify-center rounded-full border-2 border-blue-600 bg-white">
-                      <div className="h-2 w-2 rounded-full bg-blue-600" />
-                    </div>
-                    <ConsultaCard
-                      record={{
-                        id: record.id,
-                        date: record.date.toISOString(),
-                        reason: record.reason,
-                        subjective: record.subjective,
-                        objective: record.objective,
-                        assessment: record.assessment,
-                        plan: record.plan,
-                        notes: record.notes,
-                        doctor: record.doctor,
-                        vitalSigns: record.vitalSigns ? {
-                          bloodPressureSys: record.vitalSigns.bloodPressureSys,
-                          bloodPressureDia: record.vitalSigns.bloodPressureDia,
-                          heartRate: record.vitalSigns.heartRate,
-                          temperature: record.vitalSigns.temperature,
-                          oxygenSat: record.vitalSigns.oxygenSat,
-                          weight: record.vitalSigns.weight,
-                          height: record.vitalSigns.height,
-                          bmi: record.vitalSigns.bmi,
-                          glucoseLevel: record.vitalSigns.glucoseLevel,
-                          respiratoryRate: record.vitalSigns.respiratoryRate,
-                        } : null,
-                        diagnoses: record.diagnoses,
-                        prescriptions: record.prescriptions.map(rx => ({
-                          id: rx.id,
-                          notes: rx.notes,
-                          createdAt: rx.createdAt.toISOString(),
-                          doctor: rx.doctor,
-                          items: rx.items.map(it => ({
-                            id: it.id,
-                            medication: it.medication,
-                            dosage: it.dosage,
-                            frequency: it.frequency,
-                            duration: it.duration,
-                            quantity: it.quantity,
-                            instructions: it.instructions,
-                          })),
-                        })),
-                      }}
-                      defaultOpen={index === 0}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            <ConsultasTimeline
+              patientId={patient.id}
+              records={patient.clinicalRecords.map(record => ({
+                id: record.id,
+                date: record.date.toISOString(),
+                reason: record.reason,
+                subjective: record.subjective,
+                objective: record.objective,
+                assessment: record.assessment,
+                plan: record.plan,
+                notes: record.notes,
+                doctor: record.doctor,
+                vitalSigns: record.vitalSigns ? {
+                  bloodPressureSys: record.vitalSigns.bloodPressureSys,
+                  bloodPressureDia: record.vitalSigns.bloodPressureDia,
+                  heartRate: record.vitalSigns.heartRate,
+                  temperature: record.vitalSigns.temperature,
+                  oxygenSat: record.vitalSigns.oxygenSat,
+                  weight: record.vitalSigns.weight,
+                  height: record.vitalSigns.height,
+                  bmi: record.vitalSigns.bmi,
+                  glucoseLevel: record.vitalSigns.glucoseLevel,
+                  respiratoryRate: record.vitalSigns.respiratoryRate,
+                } : null,
+                diagnoses: record.diagnoses,
+                prescriptions: record.prescriptions.map(rx => ({
+                  id: rx.id,
+                  notes: rx.notes,
+                  createdAt: rx.createdAt.toISOString(),
+                  doctor: rx.doctor,
+                  items: rx.items.map(it => ({
+                    id: it.id,
+                    medication: it.medication,
+                    dosage: it.dosage,
+                    frequency: it.frequency,
+                    duration: it.duration,
+                    quantity: it.quantity,
+                    instructions: it.instructions,
+                  })),
+                })),
+              }))}
+            />
           </div>
         </TabsContent>
 
