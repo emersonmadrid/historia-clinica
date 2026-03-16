@@ -298,7 +298,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
   }, [isDirty])
 
   return (
-    <div className="space-y-6 w-full max-w-4xl">
+    <div className="space-y-6 w-full max-w-4xl mx-auto">
       <Breadcrumb items={[
         { label: 'Pacientes', href: '/pacientes' },
         { label: patientName || 'Paciente', href: `/pacientes/${patientId}` },
@@ -598,7 +598,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
-              <Pill className="h-4 w-4 text-blue-600" />
+              <Pill className="h-4 w-4 text-[#0EA5E9]" />
               Recetas (opcional)
             </CardTitle>
             <Button
@@ -647,8 +647,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
 
         {/* Sticky save bar */}
         <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 border-t border-slate-200 bg-white/95 backdrop-blur px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between max-w-4xl">
-            <p className="text-sm text-slate-500 hidden sm:block">Recuerde verificar todos los campos antes de guardar</p>
+          <div className="flex items-center justify-end max-w-4xl mx-auto w-full">
             <div className="flex items-center gap-3">
               <Button variant="outline" type="button" asChild>
                 <Link href={`/pacientes/${patientId}`}>Cancelar</Link>
@@ -697,9 +696,9 @@ function RxBlock({
   })
 
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50/30 p-4 space-y-4">
+    <div className="rounded-lg border border-[#A5F3FC] bg-[#F0F9FF]/30 p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-blue-800 flex items-center gap-1.5">
+        <span className="text-sm font-semibold text-[#075985] flex items-center gap-1.5">
           <Pill className="h-4 w-4" />
           Receta {rxIndex + 1}
         </span>

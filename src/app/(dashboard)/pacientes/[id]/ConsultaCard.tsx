@@ -89,7 +89,7 @@ function classifyHR(hr: number) {
 }
 
 function classifyTemp(t: number) {
-  if (t < 36.0) return { label: 'Hipotermia', cls: 'text-blue-600' }
+  if (t < 36.0) return { label: 'Hipotermia', cls: 'text-[#0EA5E9]' }
   if (t <= 37.5) return { label: 'Normal', cls: 'text-green-600' }
   if (t <= 38.5) return { label: 'Febrícula', cls: 'text-yellow-600' }
   return { label: 'Fiebre', cls: 'text-red-600' }
@@ -102,7 +102,7 @@ function classifySpO2(sat: number) {
 }
 
 function classifyBMI(bmi: number) {
-  if (bmi < 18.5) return { label: 'Bajo peso', cls: 'text-blue-600' }
+  if (bmi < 18.5) return { label: 'Bajo peso', cls: 'text-[#0EA5E9]' }
   if (bmi < 25) return { label: 'Normal', cls: 'text-green-600' }
   if (bmi < 30) return { label: 'Sobrepeso', cls: 'text-yellow-600' }
   if (bmi < 35) return { label: 'Obesidad I', cls: 'text-orange-600' }
@@ -141,7 +141,7 @@ export function ConsultaCard({ record, patientId, defaultOpen = false }: { recor
                     <span className="text-xs text-slate-400">+{record.diagnoses.length - 3} más</span>
                   )}
                   {record.prescriptions.length > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#F0F9FF] px-2 py-0.5 text-xs text-[#0EA5E9]">
                       <Pill className="h-3 w-3" />
                       {record.prescriptions.length} receta(s)
                     </span>
@@ -153,7 +153,7 @@ export function ConsultaCard({ record, patientId, defaultOpen = false }: { recor
               <Link
                 href={`/pacientes/${patientId}/historia/${record.id}/editar`}
                 onClick={e => e.stopPropagation()}
-                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:border-[#A5F3FC] hover:text-[#0EA5E9] hover:bg-[#F0F9FF] transition-colors"
               >
                 <Pencil className="h-3 w-3" />
                 Editar
@@ -218,8 +218,8 @@ export function ConsultaCard({ record, patientId, defaultOpen = false }: { recor
                 {record.vitalSigns.oxygenSat && (() => {
                   const c = classifySpO2(record.vitalSigns!.oxygenSat!)
                   return (
-                    <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2">
-                      <Wind className="h-4 w-4 text-blue-500 shrink-0" />
+                    <div className="flex items-center gap-1.5 rounded-lg bg-[#F0F9FF] px-3 py-2">
+                      <Wind className="h-4 w-4 text-[#0EA5E9] shrink-0" />
                       <div>
                         <p className="text-xs text-slate-400">SpO2</p>
                         <p className="text-sm font-medium text-slate-900">{record.vitalSigns.oxygenSat}%</p>

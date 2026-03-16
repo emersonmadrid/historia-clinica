@@ -282,7 +282,7 @@ export default function EditarConsultaPage({
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <Breadcrumb items={[
         { label: 'Pacientes', href: '/pacientes' },
         { label: patientName || 'Paciente', href: `/pacientes/${patientId}` },
@@ -513,8 +513,7 @@ export default function EditarConsultaPage({
 
         {/* Sticky save bar */}
         <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 border-t border-slate-200 bg-white/95 backdrop-blur px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between max-w-4xl">
-            <p className="text-sm text-slate-500 hidden sm:block">Verifique los campos antes de guardar</p>
+          <div className="flex items-center justify-end max-w-4xl mx-auto w-full">
             <div className="flex items-center gap-3">
               <Button variant="outline" type="button" asChild>
                 <Link href={`/pacientes/${patientId}`}>Cancelar</Link>

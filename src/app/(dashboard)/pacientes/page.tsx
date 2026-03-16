@@ -70,9 +70,9 @@ function SortButton({
       {label}
       {active ? (
         order === 'asc' ? (
-          <ArrowUp className="h-3.5 w-3.5 text-blue-600" />
+          <ArrowUp className="h-3.5 w-3.5 text-[#0EA5E9]" />
         ) : (
-          <ArrowDown className="h-3.5 w-3.5 text-blue-600" />
+          <ArrowDown className="h-3.5 w-3.5 text-[#0EA5E9]" />
         )
       ) : (
         <ArrowUpDown className="h-3.5 w-3.5 opacity-0 group-hover:opacity-50" />
@@ -161,7 +161,7 @@ export default function PacientesPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-xl border bg-white overflow-hidden" style={{ borderColor: 'var(--border)' }}>
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="inline-flex items-center gap-2 text-slate-500">
@@ -205,7 +205,7 @@ export default function PacientesPage() {
                     className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors"
                   >
                     {/* Avatar */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E0F2FE] text-[#0284C7] text-sm font-semibold">
                       {patient.firstName[0]}{patient.lastName[0]}
                     </div>
 
@@ -287,7 +287,7 @@ export default function PacientesPage() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                  <tr className="border-b" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background)' }}>
                     <th className="px-4 py-3 text-left">
                       <SortButton label="Paciente" column="name" current={sortBy} order={sortOrder} onClick={handleSort} />
                     </th>
@@ -322,7 +322,7 @@ export default function PacientesPage() {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E0F2FE] text-[#0284C7] text-xs font-semibold">
                               {patient.firstName[0]}{patient.lastName[0]}
                             </div>
                             <div className="flex items-center gap-1.5">
@@ -342,7 +342,7 @@ export default function PacientesPage() {
                         <td className="px-4 py-3 text-slate-600">{calculateAge(patient.birthDate)} años</td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           {patient.phone ? (
-                            <a href={`tel:${patient.phone}`} className="flex items-center gap-1.5 text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>
+                            <a href={`tel:${patient.phone}`} className="flex items-center gap-1.5 text-[#0EA5E9] hover:underline" onClick={e => e.stopPropagation()}>
                               <Phone className="h-3.5 w-3.5 shrink-0" />{patient.phone}
                             </a>
                           ) : <span className="text-slate-300">—</span>}

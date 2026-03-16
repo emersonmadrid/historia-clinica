@@ -45,8 +45,8 @@ export function ConsultasTimeline({ records, patientId }: Props) {
         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-200" />
         {shown.map((record, index) => (
           <div key={record.id} className="relative pl-14">
-            <div className="absolute left-4 flex h-5 w-5 items-center justify-center rounded-full border-2 border-blue-600 bg-white">
-              <div className="h-2 w-2 rounded-full bg-blue-600" />
+            <div className="absolute left-4 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#0EA5E9] bg-white">
+              <div className="h-2 w-2 rounded-full bg-[#0EA5E9]" />
             </div>
             <ConsultaCard record={record} patientId={patientId} defaultOpen={index === 0} />
           </div>

@@ -133,13 +133,13 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
       ) : (
         <div className="space-y-3">
           {initial.map((rx) => (
-            <div key={rx.id} className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+            <div key={rx.id} className="rounded-lg border border-[#A5F3FC] bg-[#F0F9FF]/50 p-3">
               <div className="flex items-start justify-between mb-2">
                 <span className="text-xs text-slate-500">Dr. {rx.doctor.name}</span>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="h-6 w-6" asChild title="Imprimir receta">
                     <a href={`/api/recetas/${rx.id}/pdf`} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-3.5 w-3.5 text-blue-600" />
+                      <Download className="h-3.5 w-3.5 text-[#0EA5E9]" />
                     </a>
                   </Button>
                   <Button
@@ -167,7 +167,7 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
                 ))}
               </div>
               {rx.notes && (
-                <p className="mt-2 text-xs text-slate-500 border-t border-blue-100 pt-2">{rx.notes}</p>
+                <p className="mt-2 text-xs text-slate-500 border-t border-[#A5F3FC] pt-2">{rx.notes}</p>
               )}
             </div>
           ))}

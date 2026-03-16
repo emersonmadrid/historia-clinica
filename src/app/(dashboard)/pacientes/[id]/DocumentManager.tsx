@@ -49,7 +49,7 @@ function formatDate(iso: string) {
 
 function FileIcon({ mimeType }: { mimeType: string }) {
   if (mimeType.startsWith('image/')) {
-    return <FileImage className="h-5 w-5 text-blue-500" />
+    return <FileImage className="h-5 w-5 text-[#0EA5E9]" />
   }
   return <FileText className="h-5 w-5 text-slate-500" />
 }
@@ -150,7 +150,7 @@ export function DocumentManager({ patientId, documents }: DocumentManagerProps) 
       {documents.length === 0 ? (
         <div
           className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors ${
-            dragOver ? 'border-blue-400 bg-blue-50' : 'border-slate-200'
+            dragOver ? 'border-[#0EA5E9] bg-[#F0F9FF]' : 'border-slate-200'
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
@@ -159,7 +159,7 @@ export function DocumentManager({ patientId, documents }: DocumentManagerProps) 
           <Upload className="mx-auto h-8 w-8 text-slate-300 mb-3" />
           <p className="text-sm text-slate-400">No hay documentos. Arrastra un archivo aquí o</p>
           <button
-            className="mt-2 text-sm text-blue-600 hover:underline"
+            className="mt-2 text-sm text-[#0EA5E9] hover:underline"
             onClick={() => setOpen(true)}
           >
             selecciona un archivo

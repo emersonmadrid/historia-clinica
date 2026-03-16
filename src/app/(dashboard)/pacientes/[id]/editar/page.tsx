@@ -148,7 +148,7 @@ export default function EditarPacientePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <Breadcrumb items={[
         { label: 'Pacientes', href: '/pacientes' },
         { label: 'Perfil', href: `/pacientes/${id}` },

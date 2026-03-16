@@ -62,7 +62,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0EA5E9] shadow-lg">
             <Stethoscope className="h-9 w-9 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Historia Clínica</h1>
@@ -107,7 +107,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowForgot(true)}
-                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                  className="text-xs text-[#0EA5E9] hover:text-[#0284C7] hover:underline"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
@@ -182,7 +182,7 @@ export default function LoginPage() {
             </p>
             <button
               onClick={() => setShowForgot(false)}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="w-full rounded-lg bg-[#0EA5E9] px-4 py-2 text-sm font-medium text-white hover:bg-[#0284C7]"
             >
               Entendido
             </button>

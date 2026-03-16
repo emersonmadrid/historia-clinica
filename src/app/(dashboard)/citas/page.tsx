@@ -29,7 +29,7 @@ type Appointment = Prisma.AppointmentGetPayload<{
 
 function statusColor(status: string) {
   const map: Record<string, string> = {
-    SCHEDULED: 'bg-blue-100 text-blue-800',
+    SCHEDULED: 'bg-[#E0F2FE] text-[#075985]',
     CONFIRMED: 'bg-green-100 text-green-800',
     CANCELLED: 'bg-red-100 text-red-800',
     COMPLETED: 'bg-slate-100 text-slate-800',
@@ -236,9 +236,9 @@ export default function CitasPage() {
                       className={cn(
                         'relative flex flex-col items-center justify-center rounded-lg p-2 text-sm transition-colors min-h-[48px]',
                         isSelected
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-[#0EA5E9] text-white'
                           : _isToday
-                          ? 'bg-blue-50 text-blue-700 font-semibold'
+                          ? 'bg-[#F0F9FF] text-[#0284C7] font-semibold'
                           : 'hover:bg-slate-100 text-slate-700',
                         count > 0 && !isSelected ? 'font-medium' : ''
                       )}
@@ -248,7 +248,7 @@ export default function CitasPage() {
                         <span
                           className={cn(
                             'mt-0.5 h-1.5 w-1.5 rounded-full',
-                            isSelected ? 'bg-white' : 'bg-blue-500'
+                            isSelected ? 'bg-white' : 'bg-[#0EA5E9]'
                           )}
                         />
                       )}
@@ -267,7 +267,7 @@ export default function CitasPage() {
               <CardTitle className="text-base">
                 {isToday(selectedDate) ? 'Hoy' : format(selectedDate, "d 'de' MMMM", { locale: es })}
               </CardTitle>
-              <p className="text-xs text-slate-500">{dayAppointments.length} cita(s)</p>
+              <p className="text-xs text-slate-500">{dayAppointments.length} {dayAppointments.length === 1 ? 'cita' : 'citas'}</p>
             </CardHeader>
             <CardContent className="p-0">
               {dayAppointments.length === 0 ? (
@@ -294,7 +294,7 @@ export default function CitasPage() {
                           <div className="min-w-0">
                             <Link
                               href={`/pacientes/${apt.patient.id}`}
-                              className="text-sm font-medium text-slate-900 hover:text-blue-600 truncate block"
+                              className="text-sm font-medium text-slate-900 hover:text-[#0EA5E9] truncate block"
                             >
                               {apt.patient.firstName} {apt.patient.lastName}
                             </Link>
@@ -335,7 +335,7 @@ export default function CitasPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-7 px-2.5 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                              className="h-7 px-2.5 text-xs border-[#A5F3FC] text-[#0284C7] hover:bg-[#F0F9FF]"
                               disabled={loadingId === apt.id}
                               onClick={() => updateStatus.mutate({ id: apt.id, status: 'COMPLETED' })}
                             >

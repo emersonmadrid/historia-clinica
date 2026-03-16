@@ -27,14 +27,14 @@ interface ReportesData {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  Agendada: '#3b82f6',
+  Agendada: '#0EA5E9',
   Confirmada: '#22c55e',
   Cancelada: '#ef4444',
   Completada: '#8b5cf6',
   'No asistió': '#f59e0b',
 }
 
-const PIE_COLORS = ['#3b82f6', '#ec4899', '#8b5cf6', '#22c55e']
+const PIE_COLORS = ['#0EA5E9', '#ec4899', '#8b5cf6', '#22c55e']
 
 export default function ReportesPage() {
   const [data, setData] = useState<ReportesData | null>(null)
@@ -88,8 +88,8 @@ export default function ReportesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100">
-          <BarChart2 className="h-5 w-5 text-blue-600" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E0F2FE]">
+          <BarChart2 className="h-5 w-5 text-[#0EA5E9]" />
         </div>
         <div>
           <h2 className="text-xl font-bold text-slate-900">Reportes</h2>
@@ -124,7 +124,7 @@ export default function ReportesPage() {
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
                   formatter={(value) => [value ?? 0, 'Consultas']}
                 />
-                <Bar dataKey="cantidad" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="cantidad" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -235,9 +235,9 @@ export default function ReportesPage() {
                 <Line
                   type="monotone"
                   dataKey="cantidad"
-                  stroke="#3b82f6"
+                  stroke="#0EA5E9"
                   strokeWidth={2}
-                  dot={{ fill: '#3b82f6', r: 4 }}
+                  dot={{ fill: '#0EA5E9', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>

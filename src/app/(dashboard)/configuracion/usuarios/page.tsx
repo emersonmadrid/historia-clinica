@@ -160,7 +160,7 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <Breadcrumb items={[
         { label: 'Configuración', href: '/configuracion' },
         { label: 'Usuarios' },
@@ -200,7 +200,7 @@ export default function UsuariosPage() {
             <div className="divide-y divide-slate-100">
               {users.map((user) => (
                 <div key={user.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm font-bold">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E0F2FE] text-[#0284C7] text-sm font-bold">
                     {user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -339,7 +339,7 @@ export default function UsuariosPage() {
                 role="switch"
                 aria-checked={editForm.active}
                 onClick={() => setEditForm({ ...editForm, active: !editForm.active })}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.active ? 'bg-blue-600' : 'bg-slate-200'}`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.active ? 'bg-[#0EA5E9]' : 'bg-slate-200'}`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editForm.active ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>

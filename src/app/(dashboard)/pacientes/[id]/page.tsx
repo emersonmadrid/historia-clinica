@@ -55,7 +55,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 function AppointmentStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
-    SCHEDULED: { label: 'Programada', className: 'bg-blue-100 text-blue-700' },
+    SCHEDULED: { label: 'Programada', className: 'bg-[#E0F2FE] text-[#0284C7]' },
     CONFIRMED: { label: 'Confirmada', className: 'bg-green-100 text-green-700' },
     COMPLETED: { label: 'Completada', className: 'bg-slate-100 text-slate-700' },
     CANCELLED: { label: 'Cancelada', className: 'bg-red-100 text-red-700' },
@@ -95,10 +95,10 @@ export default async function PatientPage({
   )
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6">
       {/* ── Patient Header ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="h-1.5 bg-gradient-to-r from-blue-600 to-blue-400" />
+        <div className="h-1.5 bg-gradient-to-r from-[#0EA5E9] to-[#7DD3FC]" />
         <div className="p-4 sm:p-6">
 
           {/* Mobile top bar: back + actions */}
@@ -175,7 +175,7 @@ export default async function PatientPage({
               </Button>
 
               {/* Avatar */}
-              <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 text-base sm:text-xl font-bold">
+              <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-[#E0F2FE] text-[#0284C7] text-base sm:text-xl font-bold">
                 {patient.firstName[0]}{patient.lastName[0]}
               </div>
 
@@ -318,7 +318,7 @@ export default async function PatientPage({
                 <div className="space-y-1.5">
                   {activeDiagnoses.slice(0, 4).map(d => (
                     <div key={d.id} className="flex items-center gap-1.5">
-                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${d.status === 'CHRONIC' ? 'bg-orange-400' : 'bg-blue-500'}`} />
+                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${d.status === 'CHRONIC' ? 'bg-orange-400' : 'bg-[#0EA5E9]'}`} />
                       <span className="text-xs text-slate-700 leading-snug">{d.description}</span>
                       {d.status === 'CHRONIC' && <span className="text-xs text-orange-500 font-medium">Crónico</span>}
                     </div>
@@ -338,7 +338,7 @@ export default async function PatientPage({
                 <div className="space-y-1.5">
                   {recentMedications.slice(0, 4).map(m => (
                     <div key={m.id} className="flex items-start gap-1.5">
-                      <Pill className="h-3 w-3 text-blue-400 shrink-0 mt-0.5" />
+                      <Pill className="h-3 w-3 text-[#0EA5E9] shrink-0 mt-0.5" />
                       <div>
                         <span className="text-xs font-medium text-slate-700">{m.medication}</span>
                         <span className="text-xs text-slate-400"> — {m.dosage} {m.frequency}</span>
@@ -408,7 +408,7 @@ export default async function PatientPage({
           <TabsTrigger value="consultas" className="flex-1 gap-1.5">
             Consultas
             {patient.clinicalRecords.length > 0 && (
-              <span className="rounded-full bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 font-semibold leading-none">
+              <span className="rounded-full bg-[#E0F2FE] text-[#0284C7] text-xs px-1.5 py-0.5 font-semibold leading-none">
                 {patient.clinicalRecords.length}
               </span>
             )}

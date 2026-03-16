@@ -27,14 +27,14 @@ const variantStyles: Record<ToastVariant, string> = {
   default: 'bg-white border-slate-200 text-slate-900',
   success: 'bg-white border-green-200 text-slate-900',
   error: 'bg-white border-red-200 text-slate-900',
-  info: 'bg-white border-blue-200 text-slate-900',
+  info: 'bg-white border-sky-200 text-slate-900',
 }
 
 const variantIcons: Record<ToastVariant, React.ReactNode> = {
   default: null,
   success: <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />,
   error: <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />,
-  info: <Info className="h-5 w-5 text-blue-500 shrink-0" />,
+  info: <Info className="h-5 w-5 text-sky-500 shrink-0" />,
 }
 
 interface ToastProps extends React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root> {
