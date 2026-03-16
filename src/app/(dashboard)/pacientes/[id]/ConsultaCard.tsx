@@ -5,6 +5,8 @@ import { ChevronDown, ChevronUp, Heart, Activity, Thermometer, Wind, Pill } from
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PrescriptionSection } from './historia/PrescriptionSection'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 function diagnosisStatusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
   if (status === 'ACTIVE') return 'default'
@@ -22,13 +24,7 @@ function diagnosisStatusLabel(status: string) {
 }
 
 function formatDateTime(date: string) {
-  return new Date(date).toLocaleString('es-PE', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return format(new Date(date), "dd MMM yyyy, HH:mm", { locale: es })
 }
 
 export interface ConsultaRecord {
