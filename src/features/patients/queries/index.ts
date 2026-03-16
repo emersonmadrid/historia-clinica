@@ -75,6 +75,10 @@ export async function listPatients(filters: {
           take: 1,
           select: { dateTime: true, status: true },
         },
+        allergies: {
+          where: { severity: 'SEVERE' },
+          select: { id: true },
+        },
         _count: { select: { clinicalRecords: true } },
       },
     }),

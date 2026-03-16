@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Search, Plus, ChevronLeft, ChevronRight, UserRound,
   MoreHorizontal, Pencil, Calendar, ArrowUpDown, ArrowUp, ArrowDown,
-  Phone, Clock, X,
+  Phone, Clock, X, ShieldAlert,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,9 +25,18 @@ type Patient = Prisma.PatientGetPayload<{
   include: {
     clinicalRecords: { select: { date: true } }
     appointments: { select: { dateTime: true; status: true } }
+    allergies: { select: { id: true } }
     _count: { select: { clinicalRecords: true } }
   }
 }>
+
+function LastVisitDot({ date }: { date: Date | string | null | undefined }) {
+  if (!date) return <span className="h-2 w-2 rounded-full bg-slate-200 inline-block" title="Sin visitas" />
+  const days = Math.floor((Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24))
+  if (days < 90) return <span className="h-2 w-2 rounded-full bg-green-400 inline-block" title="Visita reciente" />
+  if (days < 365) return <span className="h-2 w-2 rounded-full bg-yellow-400 inline-block" title="Más de 3 meses" />
+  return <span className="h-2 w-2 rounded-full bg-red-400 inline-block" title="Más de 1 año" />
+}
 
 interface PatientsResponse {
   patients: Patient[]
@@ -228,9 +237,16 @@ export default function PacientesPage() {
                               {patient.firstName[0]}{patient.lastName[0]}
                             </div>
                             <div>
-                              <p className="font-medium text-slate-900">
-                                {patient.firstName} {patient.lastName}
-                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-medium text-slate-900">
+                                  {patient.firstName} {patient.lastName}
+                                </p>
+                                {patient.allergies.length > 0 && (
+                                  <span title="Alergias severas registradas">
+                                    <ShieldAlert className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-slate-400 md:hidden">
                                 {documentTypeLabel(patient.documentType)}: {patient.documentNumber}
                               </p>
@@ -268,14 +284,19 @@ export default function PacientesPage() {
 
                         {/* Última Visita */}
                         <td className="px-4 py-3 text-slate-600">
-                          {patient.clinicalRecords[0]
-                            ? formatDate(patient.clinicalRecords[0].date)
-                            : <span className="text-slate-300">Sin visitas</span>}
-                          {patient._count.clinicalRecords > 0 && (
-                            <span className="ml-1.5 text-xs text-slate-400">
-                              ({patient._count.clinicalRecords})
+                          <div className="flex items-center gap-2">
+                            <LastVisitDot date={patient.clinicalRecords[0]?.date} />
+                            <span>
+                              {patient.clinicalRecords[0]
+                                ? formatDate(patient.clinicalRecords[0].date)
+                                : <span className="text-slate-300">Sin visitas</span>}
+                              {patient._count.clinicalRecords > 0 && (
+                                <span className="ml-1.5 text-xs text-slate-400">
+                                  ({patient._count.clinicalRecords})
+                                </span>
+                              )}
                             </span>
-                          )}
+                          </div>
                         </td>
 
                         {/* Próxima Cita */}

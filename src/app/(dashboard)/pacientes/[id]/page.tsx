@@ -41,6 +41,7 @@ import { AllergyManager } from './AllergyManager'
 import { BackgroundManager } from './BackgroundManager'
 import { DocumentManager } from './DocumentManager'
 import { ConsultaCard } from './ConsultaCard'
+import { QuickAddAllergyButton } from './QuickAddAllergyButton'
 
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -73,7 +74,7 @@ export default async function PatientPage({
 }) {
   const { id } = await params
   const sp = await searchParams
-  const activeTab = sp.tab ?? 'resumen'
+  const activeTab = sp.tab ?? 'consultas'
 
   const patient = await getPatientWithFullHistory(id)
   if (!patient) notFound()
@@ -112,6 +113,13 @@ export default async function PatientPage({
                   &nbsp;&bull;&nbsp;{genderLabel(patient.gender)}
                   {patient.bloodType && <>&nbsp;&bull;&nbsp;<span className="font-medium text-slate-700">{bloodTypeLabel(patient.bloodType)}</span></>}
                 </p>
+                {nextAppointment && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-green-700">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Próxima cita: <span className="font-semibold">{formatDateTime(nextAppointment.dateTime)}</span>
+                    &nbsp;&bull;&nbsp;Dr. {nextAppointment.doctor.name}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -185,7 +193,10 @@ export default async function PatientPage({
           <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
             {/* Alergias */}
             <div className="px-4 py-3">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Alergias Conocidas</p>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Alergias Conocidas</p>
+                <QuickAddAllergyButton patientId={patient.id} />
+              </div>
               {patient.allergies.length === 0 ? (
                 <p className="text-xs text-slate-300 italic">Sin alergias registradas</p>
               ) : (
@@ -263,7 +274,6 @@ export default async function PatientPage({
       {/* ── Tabs ── */}
       <Tabs key={activeTab} defaultValue={activeTab}>
         <TabsList className="w-full overflow-x-auto">
-          <TabsTrigger value="resumen" className="flex-1">Resumen</TabsTrigger>
           <TabsTrigger value="consultas" className="flex-1 gap-1.5">
             Consultas
             {patient.clinicalRecords.length > 0 && (
@@ -290,155 +300,6 @@ export default async function PatientPage({
           </TabsTrigger>
           <TabsTrigger value="perfil" className="flex-1">Perfil</TabsTrigger>
         </TabsList>
-
-        {/* ── RESUMEN ── */}
-        <TabsContent value="resumen" className="mt-4 space-y-4">
-          {/* Clickable Stats */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { label: 'Consultas', value: patient.clinicalRecords.length, icon: ClipboardList, color: 'text-blue-600 bg-blue-50', tab: 'consultas' },
-              { label: 'Alergias', value: patient.allergies.length, icon: ShieldAlert, color: severeAllergies.length > 0 ? 'text-red-600 bg-red-50' : 'text-slate-600 bg-slate-50', tab: 'antecedentes' },
-              { label: 'Antecedentes', value: patient.medicalBackgrounds.length, icon: FileText, color: 'text-violet-600 bg-violet-50', tab: 'antecedentes' },
-              { label: 'Documentos', value: patient.documents.length, icon: Download, color: 'text-emerald-600 bg-emerald-50', tab: 'archivos' },
-            ].map(stat => {
-              const Icon = stat.icon
-              return (
-                <Link
-                  key={stat.label}
-                  href={`?tab=${stat.tab}`}
-                  className="rounded-xl border border-slate-200 bg-white p-4 flex items-center gap-3 hover:border-blue-300 hover:shadow-sm transition-all group"
-                >
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stat.color}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-                    <p className="text-xs text-slate-500 group-hover:text-blue-600 transition-colors">{stat.label}</p>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {/* Recent consultations */}
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-3">
-                  <CardTitle className="text-base">Últimas Consultas</CardTitle>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/pacientes/${patient.id}/historia/nueva-consulta`}>
-                      <Plus className="mr-1 h-4 w-4" />
-                      Nueva
-                    </Link>
-                  </Button>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {recentRecords.length === 0 ? (
-                    <div className="px-6 py-10 text-center">
-                      <ClipboardList className="mx-auto h-10 w-10 text-slate-200 mb-3" />
-                      <p className="text-sm font-medium text-slate-500">Sin consultas registradas</p>
-                      <p className="text-xs text-slate-400 mt-1">Registre la primera consulta de este paciente</p>
-                      <Button size="sm" asChild className="mt-4">
-                        <Link href={`/pacientes/${patient.id}/historia/nueva-consulta`}>
-                          <Plus className="mr-1.5 h-4 w-4" />
-                          Nueva Consulta
-                        </Link>
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-100">
-                      {recentRecords.map(record => (
-                        <div key={record.id} className="flex items-start gap-3 px-6 py-4">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-                            <ClipboardList className="h-4 w-4 text-blue-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate">{record.reason}</p>
-                            <p className="text-xs text-slate-500">Dr. {record.doctor.name}</p>
-                            {record.diagnoses.length > 0 && (
-                              <p className="text-xs text-slate-400 mt-0.5 truncate">
-                                {record.diagnoses.map(d => d.description).join(', ')}
-                              </p>
-                            )}
-                          </div>
-                          <div className="shrink-0 text-right">
-                            <p className="text-xs text-slate-500">{formatDate(record.date)}</p>
-                            {record.prescriptions.length > 0 && (
-                              <span className="mt-1 inline-flex items-center gap-1 text-xs text-blue-600">
-                                <Pill className="h-3 w-3" />
-                                {record.prescriptions.length} receta(s)
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-                {patient.clinicalRecords.length > 3 && (
-                  <div className="border-t border-slate-100 px-6 py-3">
-                    <Link href="?tab=consultas" className="text-xs text-blue-600 hover:underline font-medium">
-                      Ver las {patient.clinicalRecords.length} consultas →
-                    </Link>
-                  </div>
-                )}
-              </Card>
-            </div>
-
-            {/* Next appointment + allergies summary */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-blue-600" />
-                    Próxima Cita
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {nextAppointment ? (
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-slate-900">
-                        {formatDateTime(nextAppointment.dateTime)}
-                      </p>
-                      <p className="text-xs text-slate-500">Dr. {nextAppointment.doctor.name}</p>
-                      <p className="text-xs text-slate-500">{nextAppointment.reason}</p>
-                      <div className="pt-1">
-                        <AppointmentStatusBadge status={nextAppointment.status} />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-2">
-                      <p className="text-sm text-slate-400">Sin citas próximas</p>
-                      <Button variant="outline" size="sm" asChild className="mt-2">
-                        <Link href={`/citas/nueva?patientId=${patient.id}`}>Agendar</Link>
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {severeAllergies.length > 0 && (
-                <Card className="border-red-200 bg-red-50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-red-700 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      Alertas Clínicas
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-1.5">
-                    {severeAllergies.map(a => (
-                      <div key={a.id} className="text-sm">
-                        <span className="font-semibold text-red-800">{a.allergen}</span>
-                        {a.reaction && <span className="text-red-600"> — {a.reaction}</span>}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-        </TabsContent>
 
         {/* ── CONSULTAS ── */}
         <TabsContent value="consultas" className="mt-4">
