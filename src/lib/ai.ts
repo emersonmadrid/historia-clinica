@@ -1,9 +1,11 @@
 import Groq from 'groq-sdk'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+function getGroq() {
+  return new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' })
+}
 
 export async function suggestCIE10(text: string): Promise<{ code: string; description: string }[]> {
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: 'llama-3.1-8b-instant',
     temperature: 0,
     max_tokens: 300,
@@ -57,7 +59,7 @@ export async function generateSOAP(params: {
     params.vitalSigns?.oxygenSat ? `SpO2: ${params.vitalSigns.oxygenSat}%` : null,
   ].filter(Boolean).join('\n')
 
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     temperature: 0.3,
     max_tokens: 800,
