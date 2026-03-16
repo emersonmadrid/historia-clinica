@@ -48,7 +48,7 @@ export function ConsultasTimeline({ records, patientId }: Props) {
             <div className="absolute left-4 flex h-5 w-5 items-center justify-center rounded-full border-2 border-blue-600 bg-white">
               <div className="h-2 w-2 rounded-full bg-blue-600" />
             </div>
-            <ConsultaCard record={record} defaultOpen={index === 0} />
+            <ConsultaCard record={record} patientId={patientId} defaultOpen={index === 0} />
           </div>
         ))}
       </div>

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Search, Plus, ChevronLeft, ChevronRight, UserRound,
+  Search, Plus, ChevronLeft, ChevronRight, UserRound, ClipboardList,
   MoreHorizontal, Pencil, Calendar, ArrowUpDown, ArrowUp, ArrowDown,
   Phone, Clock, X, ShieldAlert,
 } from 'lucide-react'
@@ -194,14 +194,104 @@ export default function PacientesPage() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* ── Mobile card list (< md) ── */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {data?.patients.map((patient) => {
+                const nextAppt = patient.appointments?.[0]
+                return (
+                  <Link
+                    key={patient.id}
+                    href={`/pacientes/${patient.id}`}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                  >
+                    {/* Avatar */}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+                      {patient.firstName[0]}{patient.lastName[0]}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-medium text-slate-900 truncate">
+                          {patient.firstName} {patient.lastName}
+                        </p>
+                        {patient.allergies.length > 0 && (
+                          <ShieldAlert className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 truncate">
+                        {documentTypeLabel(patient.documentType)}: {patient.documentNumber}
+                        {' · '}{calculateAge(patient.birthDate)} años
+                      </p>
+                      <div className="mt-0.5 flex items-center gap-1.5">
+                        <LastVisitDot date={patient.clinicalRecords[0]?.date} />
+                        <span className="text-xs text-slate-500">
+                          {patient.clinicalRecords[0]
+                            ? formatDate(patient.clinicalRecords[0].date)
+                            : 'Sin visitas'}
+                          {patient._count.clinicalRecords > 0 && (
+                            <span className="ml-1 text-slate-400">({patient._count.clinicalRecords})</span>
+                          )}
+                        </span>
+                        {nextAppt && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700">
+                            <Clock className="h-3 w-3" />
+                            {formatDate(nextAppt.dateTime)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="shrink-0" onClick={e => e.preventDefault()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/pacientes/${patient.id}`}>
+                              <UserRound className="h-4 w-4" />
+                              Ver perfil
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/pacientes/${patient.id}/historia/nueva-consulta`}>
+                              <ClipboardList className="h-4 w-4" />
+                              Nueva consulta
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/citas/nueva?patientId=${patient.id}`}>
+                              <Calendar className="h-4 w-4" />
+                              Nueva cita
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/pacientes/${patient.id}/editar`}>
+                              <Pencil className="h-4 w-4" />
+                              Editar datos
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+
+            {/* ── Desktop table (≥ md) ── */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
                     <th className="px-4 py-3 text-left">
                       <SortButton label="Paciente" column="name" current={sortBy} order={sortOrder} onClick={handleSort} />
                     </th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-600 hidden md:table-cell">Documento</th>
+                    <th className="px-4 py-3 text-left font-medium text-slate-600">Documento</th>
                     <th className="px-4 py-3 text-left">
                       <SortButton label="Edad" column="age" current={sortBy} order={sortOrder} onClick={handleSort} />
                     </th>
@@ -209,7 +299,7 @@ export default function PacientesPage() {
                     <th className="px-4 py-3 text-left">
                       <SortButton label="Última Visita" column="lastVisit" current={sortBy} order={sortOrder} onClick={handleSort} />
                     </th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-600 hidden md:table-cell">Próxima Cita</th>
+                    <th className="px-4 py-3 text-left font-medium text-slate-600">Próxima Cita</th>
                     <th className="px-4 py-3 w-10"></th>
                   </tr>
                 </thead>
@@ -230,99 +320,54 @@ export default function PacientesPage() {
                           router.push(`/pacientes/${patient.id}`)
                         }}
                       >
-                        {/* Nombre */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
                               {patient.firstName[0]}{patient.lastName[0]}
                             </div>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <p className="font-medium text-slate-900">
-                                  {patient.firstName} {patient.lastName}
-                                </p>
-                                {patient.allergies.length > 0 && (
-                                  <span title="Alergias severas registradas">
-                                    <ShieldAlert className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-slate-400 md:hidden">
-                                {documentTypeLabel(patient.documentType)}: {patient.documentNumber}
-                              </p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-medium text-slate-900">{patient.firstName} {patient.lastName}</p>
+                              {patient.allergies.length > 0 && (
+                                <span title="Alergias severas registradas">
+                                  <ShieldAlert className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                                </span>
+                              )}
                             </div>
                           </div>
                         </td>
-
-                        {/* Documento */}
-                        <td className="px-4 py-3 text-slate-600 hidden md:table-cell">
-                          <span className="text-xs text-slate-400">{documentTypeLabel(patient.documentType)}</span>
-                          <br />
-                          {patient.documentNumber}
-                        </td>
-
-                        {/* Edad */}
                         <td className="px-4 py-3 text-slate-600">
-                          {calculateAge(patient.birthDate)} años
+                          <span className="text-xs text-slate-400">{documentTypeLabel(patient.documentType)}</span>
+                          <br />{patient.documentNumber}
                         </td>
-
-                        {/* Teléfono */}
+                        <td className="px-4 py-3 text-slate-600">{calculateAge(patient.birthDate)} años</td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           {patient.phone ? (
-                            <a
-                              href={`tel:${patient.phone}`}
-                              className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 hover:underline"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <Phone className="h-3.5 w-3.5 shrink-0" />
-                              {patient.phone}
+                            <a href={`tel:${patient.phone}`} className="flex items-center gap-1.5 text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>
+                              <Phone className="h-3.5 w-3.5 shrink-0" />{patient.phone}
                             </a>
-                          ) : (
-                            <span className="text-slate-300">—</span>
-                          )}
+                          ) : <span className="text-slate-300">—</span>}
                         </td>
-
-                        {/* Última Visita */}
                         <td className="px-4 py-3 text-slate-600">
                           <div className="flex items-center gap-2">
                             <LastVisitDot date={patient.clinicalRecords[0]?.date} />
                             <span>
-                              {patient.clinicalRecords[0]
-                                ? formatDate(patient.clinicalRecords[0].date)
-                                : <span className="text-slate-300">Sin visitas</span>}
-                              {patient._count.clinicalRecords > 0 && (
-                                <span className="ml-1.5 text-xs text-slate-400">
-                                  ({patient._count.clinicalRecords})
-                                </span>
-                              )}
+                              {patient.clinicalRecords[0] ? formatDate(patient.clinicalRecords[0].date) : <span className="text-slate-300">Sin visitas</span>}
+                              {patient._count.clinicalRecords > 0 && <span className="ml-1.5 text-xs text-slate-400">({patient._count.clinicalRecords})</span>}
                             </span>
                           </div>
                         </td>
-
-                        {/* Próxima Cita */}
-                        <td className="px-4 py-3 hidden md:table-cell">
+                        <td className="px-4 py-3">
                           {nextAppt ? (
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-                              <Clock className="h-3 w-3" />
-                              {formatDate(nextAppt.dateTime)}
+                              <Clock className="h-3 w-3" />{formatDate(nextAppt.dateTime)}
                             </span>
-                          ) : (
-                            <span className="text-slate-300 text-xs">—</span>
-                          )}
+                          ) : <span className="text-slate-300 text-xs">—</span>}
                         </td>
-
-                        {/* Acciones */}
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2 text-xs text-slate-500 hover:text-green-700 hover:bg-green-50 hidden sm:flex"
-                              asChild
-                            >
+                            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-slate-500 hover:text-green-700 hover:bg-green-50" asChild>
                               <Link href={`/citas/nueva?patientId=${patient.id}`} onClick={e => e.stopPropagation()}>
-                                <Calendar className="h-3.5 w-3.5 mr-1" />
-                                Cita
+                                <Calendar className="h-3.5 w-3.5 mr-1" />Cita
                               </Link>
                             </Button>
                             <DropdownMenu>
@@ -334,14 +379,7 @@ export default function PacientesPage() {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
                                   <Link href={`/pacientes/${patient.id}/editar`}>
-                                    <Pencil className="h-4 w-4" />
-                                    Editar datos
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild className="sm:hidden">
-                                  <Link href={`/citas/nueva?patientId=${patient.id}`}>
-                                    <Calendar className="h-4 w-4" />
-                                    Nueva cita
+                                    <Pencil className="h-4 w-4" />Editar datos
                                   </Link>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -357,28 +395,16 @@ export default function PacientesPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
+              <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 flex-wrap gap-2">
                 <p className="text-sm text-slate-500">
-                  Mostrando {((page - 1) * limit) + 1}–{Math.min(page * limit, data?.total ?? 0)} de {data?.total} pacientes
+                  {((page - 1) * limit) + 1}–{Math.min(page * limit, data?.total ?? 0)} de {data?.total}
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <span className="text-sm font-medium text-slate-700">
-                    {page} / {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                  >
+                  <span className="text-sm font-medium text-slate-700">{page} / {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>

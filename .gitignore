@@ -46,3 +46,7 @@ next-env.d.ts
 cron.log
 test-results/
 tests/screenshots/
+
+# uploaded patient files (local dev only)
+/public/uploads/
+.env.production

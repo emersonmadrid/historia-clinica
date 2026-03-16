@@ -25,6 +25,7 @@ function getBreadcrumbs(pathname: string): Crumb[] {
   if (pathname === '/pacientes') return [{ label: 'Pacientes' }]
   if (pathname === '/pacientes/nuevo') return [{ label: 'Pacientes', href: '/pacientes' }, { label: 'Nuevo Paciente' }]
   if (pathname.includes('/historia/nueva-consulta')) return [{ label: 'Pacientes', href: '/pacientes' }, { label: 'Perfil', href: pathname.split('/historia')[0] }, { label: 'Nueva Consulta' }]
+  if (pathname.includes('/historia') && pathname.includes('/editar')) return [{ label: 'Pacientes', href: '/pacientes' }, { label: 'Perfil', href: pathname.split('/historia')[0] }, { label: 'Editar Consulta' }]
   if (pathname.includes('/historia')) return [{ label: 'Pacientes', href: '/pacientes' }, { label: 'Perfil', href: pathname.split('/historia')[0] }, { label: 'Historia Clínica' }]
   if (pathname.match(/^\/pacientes\/[^/]+\/editar$/)) return [{ label: 'Pacientes', href: '/pacientes' }, { label: 'Perfil', href: pathname.replace('/editar', '') }, { label: 'Editar' }]
   if (pathname.match(/^\/pacientes\/[^/]+$/)) return [{ label: 'Pacientes', href: '/pacientes' }, { label: 'Perfil del Paciente' }]
@@ -41,7 +42,7 @@ export function Header({ user, onMenuToggle }: HeaderProps) {
   const crumbs = getBreadcrumbs(pathname)
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-slate-200 bg-white px-6">
+    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-slate-200 bg-white px-4 sm:px-6">
       <button
         className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-slate-100 lg:hidden"
         onClick={onMenuToggle}

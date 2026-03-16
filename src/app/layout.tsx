@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { SessionProvider } from 'next-auth/react'
 import { QueryProvider } from '@/components/providers/QueryProvider'
@@ -6,6 +6,11 @@ import { QueryProvider } from '@/components/providers/QueryProvider'
 export const metadata: Metadata = {
   title: 'Historia Clínica - Sistema de Salud',
   description: 'Sistema de gestión de historias clínicas',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({

@@ -33,7 +33,7 @@ export function DashboardShell({ user, children }: Props) {
 
       <div className="flex flex-1 flex-col lg:pl-64">
         <Header user={user} onMenuToggle={() => setSidebarOpen((o) => !o)} />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
   )

@@ -88,6 +88,11 @@ export default async function PatientPage({
   const nextAppointment = patient.appointments[0] ?? null
   const activeDiagnoses = extractActiveDiagnoses(patient.clinicalRecords)
   const recentMedications = extractRecentMedications(patient.clinicalRecords)
+  const lastVitalSigns = patient.clinicalRecords.find(r => r.vitalSigns)?.vitalSigns ?? null
+  // Deduplicate medical backgrounds by description (same DB duplication issue as allergies)
+  const uniqueBackgrounds = patient.medicalBackgrounds.filter(
+    (b, i, arr) => arr.findIndex(x => x.description === b.description && x.type === b.type) === i
+  )
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -128,7 +133,7 @@ export default async function PatientPage({
 
             {/* Right: actions — primary + overflow menu */}
             <div className="flex items-center gap-2 sm:shrink-0">
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
                 <Link href={`/citas/nueva?patientId=${patient.id}`}>
                   <Calendar className="mr-1.5 h-4 w-4" />
                   Nueva Cita
@@ -147,6 +152,12 @@ export default async function PatientPage({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild className="sm:hidden">
+                    <Link href={`/citas/nueva?patientId=${patient.id}`} className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Nueva Cita
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href={`/pacientes/${patient.id}/editar`} className="flex items-center gap-2">
                       <Pencil className="h-4 w-4" />
@@ -163,6 +174,17 @@ export default async function PatientPage({
                       <Download className="h-4 w-4" />
                       Exportar PDF
                     </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/pacientes/${patient.id}?tab=archivos`} className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Archivos
+                      {patient.documents.length > 0 && (
+                        <span className="ml-auto rounded-full bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5 font-medium">
+                          {patient.documents.length}
+                        </span>
+                      )}
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -265,6 +287,47 @@ export default async function PatientPage({
               )}
             </div>
           </div>
+          {/* Last vital signs strip */}
+          {lastVitalSigns && (
+            <div className="border-t border-slate-100 px-4 py-2 bg-slate-50/60 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide shrink-0">Últimos signos vitales:</span>
+              {lastVitalSigns.bloodPressureSys && lastVitalSigns.bloodPressureDia && (
+                <span className="text-xs text-slate-600">
+                  <span className="font-medium text-slate-800">PA:</span> {lastVitalSigns.bloodPressureSys}/{lastVitalSigns.bloodPressureDia} mmHg
+                </span>
+              )}
+              {lastVitalSigns.heartRate && (
+                <span className="text-xs text-slate-600">
+                  <span className="font-medium text-slate-800">FC:</span> {lastVitalSigns.heartRate} lpm
+                </span>
+              )}
+              {lastVitalSigns.temperature && (
+                <span className="text-xs text-slate-600">
+                  <span className="font-medium text-slate-800">Temp:</span> {lastVitalSigns.temperature}°C
+                </span>
+              )}
+              {lastVitalSigns.oxygenSat && (
+                <span className="text-xs text-slate-600">
+                  <span className="font-medium text-slate-800">SpO2:</span> {lastVitalSigns.oxygenSat}%
+                </span>
+              )}
+              {lastVitalSigns.weight && (
+                <span className="text-xs text-slate-600">
+                  <span className="font-medium text-slate-800">Peso:</span> {lastVitalSigns.weight} kg
+                </span>
+              )}
+              {lastVitalSigns.bmi && (
+                <span className="text-xs text-slate-600">
+                  <span className="font-medium text-slate-800">IMC:</span> {lastVitalSigns.bmi.toFixed(1)}
+                </span>
+              )}
+              {lastVitalSigns.glucoseLevel && (
+                <span className="text-xs text-slate-600">
+                  <span className="font-medium text-slate-800">Glucosa:</span> {lastVitalSigns.glucoseLevel} mg/dL
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -287,17 +350,9 @@ export default async function PatientPage({
           </TabsTrigger>
           <TabsTrigger value="antecedentes" className="flex-1 gap-1.5">
             Antecedentes
-            {patient.medicalBackgrounds.length > 0 && (
+            {uniqueBackgrounds.length > 0 && (
               <span className="rounded-full bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5 font-semibold leading-none">
-                {patient.medicalBackgrounds.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="archivos" className="flex-1 gap-1.5">
-            Archivos
-            {patient.documents.length > 0 && (
-              <span className="rounded-full bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5 font-semibold leading-none">
-                {patient.documents.length}
+                {uniqueBackgrounds.length}
               </span>
             )}
           </TabsTrigger>
@@ -368,7 +423,7 @@ export default async function PatientPage({
               <CardContent className="pt-6">
                 <BackgroundManager
                   patientId={patient.id}
-                  backgrounds={patient.medicalBackgrounds.map(bg => ({
+                  backgrounds={uniqueBackgrounds.map(bg => ({
                     id: bg.id,
                     type: bg.type,
                     description: bg.description,

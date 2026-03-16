@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Heart, Activity, Thermometer, Wind, Pill } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronDown, ChevronUp, Heart, Activity, Thermometer, Wind, Pill, Pencil, Droplets, Waves } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PrescriptionSection } from './historia/PrescriptionSection'
@@ -108,7 +109,7 @@ function classifyBMI(bmi: number) {
   return { label: 'Obesidad II', cls: 'text-red-600' }
 }
 
-export function ConsultaCard({ record, defaultOpen = false }: { record: ConsultaRecord; defaultOpen?: boolean }) {
+export function ConsultaCard({ record, patientId, defaultOpen = false }: { record: ConsultaRecord; patientId: string; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
 
   return (
@@ -149,6 +150,14 @@ export function ConsultaCard({ record, defaultOpen = false }: { record: Consulta
               )}
             </div>
             <div className="shrink-0 flex items-center gap-2">
+              <Link
+                href={`/pacientes/${patientId}/historia/${record.id}/editar`}
+                onClick={e => e.stopPropagation()}
+                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                <Pencil className="h-3 w-3" />
+                Editar
+              </Link>
               {open ? (
                 <ChevronUp className="h-4 w-4 text-slate-400" />
               ) : (
@@ -219,6 +228,24 @@ export function ConsultaCard({ record, defaultOpen = false }: { record: Consulta
                     </div>
                   )
                 })()}
+                {record.vitalSigns.glucoseLevel && (
+                  <div className="flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2">
+                    <Droplets className="h-4 w-4 text-purple-500 shrink-0" />
+                    <div>
+                      <p className="text-xs text-slate-400">Glucosa</p>
+                      <p className="text-sm font-medium text-slate-900">{record.vitalSigns.glucoseLevel} mg/dL</p>
+                    </div>
+                  </div>
+                )}
+                {record.vitalSigns.respiratoryRate && (
+                  <div className="flex items-center gap-1.5 rounded-lg bg-teal-50 px-3 py-2">
+                    <Waves className="h-4 w-4 text-teal-500 shrink-0" />
+                    <div>
+                      <p className="text-xs text-slate-400">FR</p>
+                      <p className="text-sm font-medium text-slate-900">{record.vitalSigns.respiratoryRate} rpm</p>
+                    </div>
+                  </div>
+                )}
               </div>
               {(record.vitalSigns.weight || record.vitalSigns.height || record.vitalSigns.bmi) && (
                 <div className="mt-2 flex items-center gap-4 text-xs text-slate-400">

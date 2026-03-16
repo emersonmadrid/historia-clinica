@@ -646,7 +646,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
         </Card>
 
         {/* Sticky save bar */}
-        <div className="sticky bottom-0 z-10 -mx-6 border-t border-slate-200 bg-white/95 backdrop-blur px-6 py-4">
+        <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 border-t border-slate-200 bg-white/95 backdrop-blur px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between max-w-4xl">
             <p className="text-sm text-slate-500">Recuerde verificar todos los campos antes de guardar</p>
             <div className="flex items-center gap-3">
@@ -735,7 +735,7 @@ function RxBlock({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Medicamento *</Label>
                 <Input
