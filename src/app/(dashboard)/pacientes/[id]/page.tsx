@@ -99,49 +99,19 @@ export default async function PatientPage({
       {/* ── Patient Header ── */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="h-1.5 bg-gradient-to-r from-blue-600 to-blue-400" />
-        <div className="p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            {/* Left: avatar + info */}
-            <div className="flex items-start gap-4">
-              <Button variant="ghost" size="icon" asChild className="mt-1 shrink-0">
-                <Link href="/pacientes">
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              </Button>
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 text-xl font-bold">
-                {patient.firstName[0]}{patient.lastName[0]}
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">
-                  {patient.firstName} {patient.lastName}
-                </h1>
-                <p className="mt-0.5 text-sm text-slate-500">
-                  {documentTypeLabel(patient.documentType)}: {patient.documentNumber}
-                  &nbsp;&bull;&nbsp;{age} años
-                  &nbsp;&bull;&nbsp;{genderLabel(patient.gender)}
-                  {patient.bloodType && <>&nbsp;&bull;&nbsp;<span className="font-medium text-slate-700">{bloodTypeLabel(patient.bloodType)}</span></>}
-                </p>
-                {nextAppointment && (
-                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-green-700">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Próxima cita: <span className="font-semibold">{formatDateTime(nextAppointment.dateTime)}</span>
-                    &nbsp;&bull;&nbsp;Dr. {nextAppointment.doctor.name}
-                  </p>
-                )}
-              </div>
-            </div>
+        <div className="p-4 sm:p-6">
 
-            {/* Right: actions — primary + overflow menu */}
-            <div className="flex items-center gap-2 sm:shrink-0">
-              <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
-                <Link href={`/citas/nueva?patientId=${patient.id}`}>
-                  <Calendar className="mr-1.5 h-4 w-4" />
-                  Nueva Cita
-                </Link>
-              </Button>
+          {/* Mobile top bar: back + actions */}
+          <div className="flex items-center justify-between mb-4 sm:hidden">
+            <Button variant="ghost" size="icon" asChild className="-ml-1.5">
+              <Link href="/pacientes">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <div className="flex items-center gap-2">
               <Button size="sm" asChild>
                 <Link href={`/pacientes/${patient.id}/historia/nueva-consulta`}>
-                  <Plus className="mr-1.5 h-4 w-4" />
+                  <Plus className="h-4 w-4 mr-1" />
                   Nueva Consulta
                 </Link>
               </Button>
@@ -152,7 +122,7 @@ export default async function PatientPage({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem asChild className="sm:hidden">
+                  <DropdownMenuItem asChild>
                     <Link href={`/citas/nueva?patientId=${patient.id}`} className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       Nueva Cita
@@ -165,12 +135,7 @@ export default async function PatientPage({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <a
-                      href={`/api/pacientes/${patient.id}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
+                    <a href={`/api/pacientes/${patient.id}/pdf`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                       <Download className="h-4 w-4" />
                       Exportar PDF
                     </a>
@@ -198,6 +163,106 @@ export default async function PatientPage({
               </DropdownMenu>
             </div>
           </div>
+
+          {/* Avatar + info + desktop actions */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3 sm:items-start sm:gap-4 min-w-0">
+              {/* Back button — desktop only */}
+              <Button variant="ghost" size="icon" asChild className="mt-0.5 shrink-0 hidden sm:flex">
+                <Link href="/pacientes">
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </Button>
+
+              {/* Avatar */}
+              <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 text-base sm:text-xl font-bold">
+                {patient.firstName[0]}{patient.lastName[0]}
+              </div>
+
+              {/* Name + meta */}
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">
+                  {patient.firstName} {patient.lastName}
+                </h1>
+                <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-slate-500">
+                  <span>{documentTypeLabel(patient.documentType)}: {patient.documentNumber}</span>
+                  <span className="text-slate-300" aria-hidden>•</span>
+                  <span>{age} años</span>
+                  <span className="text-slate-300" aria-hidden>•</span>
+                  <span>{genderLabel(patient.gender)}</span>
+                  {patient.bloodType && (
+                    <>
+                      <span className="text-slate-300" aria-hidden>•</span>
+                      <span className="font-medium text-slate-700">{bloodTypeLabel(patient.bloodType)}</span>
+                    </>
+                  )}
+                </div>
+                {nextAppointment && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-green-700">
+                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                    <span>Próxima: <span className="font-semibold">{formatDateTime(nextAppointment.dateTime)}</span></span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop actions */}
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/citas/nueva?patientId=${patient.id}`}>
+                  <Calendar className="mr-1.5 h-4 w-4" />
+                  Nueva Cita
+                </Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href={`/pacientes/${patient.id}/historia/nueva-consulta`}>
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  Nueva Consulta
+                </Link>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/pacientes/${patient.id}/editar`} className="flex items-center gap-2">
+                      <Pencil className="h-4 w-4" />
+                      Editar datos
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a href={`/api/pacientes/${patient.id}/pdf`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                      <Download className="h-4 w-4" />
+                      Exportar PDF
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/pacientes/${patient.id}?tab=archivos`} className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Archivos
+                      {patient.documents.length > 0 && (
+                        <span className="ml-auto rounded-full bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5 font-medium">
+                          {patient.documents.length}
+                        </span>
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <DeletePatientButton
+                      patientId={patient.id}
+                      patientName={`${patient.firstName} ${patient.lastName}`}
+                      menuItem
+                    />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
         </div>
       </div>
 
