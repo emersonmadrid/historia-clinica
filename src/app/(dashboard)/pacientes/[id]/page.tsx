@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { prisma } from '@/lib/prisma'
+import { getPatientWithFullHistory, extractActiveDiagnoses, extractRecentMedications } from '@/lib/data/patients'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -42,44 +42,6 @@ import { BackgroundManager } from './BackgroundManager'
 import { DocumentManager } from './DocumentManager'
 import { ConsultaCard } from './ConsultaCard'
 
-async function getPatient(id: string) {
-  const patient = await prisma.patient.findUnique({
-    where: { id, active: true },
-    include: {
-      allergies: { orderBy: { createdAt: 'desc' } },
-      medicalBackgrounds: { orderBy: { createdAt: 'desc' } },
-      clinicalRecords: {
-        orderBy: { date: 'desc' },
-        include: {
-          doctor: { select: { id: true, name: true, speciality: true } },
-          diagnoses: true,
-          vitalSigns: true,
-          prescriptions: {
-            include: {
-              items: { orderBy: { createdAt: 'asc' } },
-              doctor: { select: { id: true, name: true, speciality: true } },
-            },
-            orderBy: { createdAt: 'desc' },
-          },
-        },
-      },
-      appointments: {
-        where: {
-          dateTime: { gte: new Date() },
-          status: { notIn: ['CANCELLED'] },
-        },
-        orderBy: { dateTime: 'asc' },
-        take: 3,
-        include: { doctor: { select: { id: true, name: true } } },
-      },
-      documents: {
-        orderBy: { createdAt: 'desc' },
-        include: { uploadedBy: { select: { id: true, name: true } } },
-      },
-    },
-  })
-  return patient
-}
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -113,28 +75,15 @@ export default async function PatientPage({
   const sp = await searchParams
   const activeTab = sp.tab ?? 'resumen'
 
-  const patient = await getPatient(id)
+  const patient = await getPatientWithFullHistory(id)
   if (!patient) notFound()
 
   const age = calculateAge(patient.birthDate)
   const severeAllergies = patient.allergies.filter(a => a.severity === 'SEVERE')
   const recentRecords = patient.clinicalRecords.slice(0, 3)
   const nextAppointment = patient.appointments[0] ?? null
-
-  // Compute active/chronic diagnoses across ALL consultations (deduplicated by code)
-  const activeDiagnoses = patient.clinicalRecords
-    .flatMap(r => r.diagnoses)
-    .filter(d => d.status === 'ACTIVE' || d.status === 'CHRONIC')
-    .reduce<typeof patient.clinicalRecords[0]['diagnoses']>((acc, d) => {
-      if (!acc.find(x => x.code === d.code)) acc.push(d)
-      return acc
-    }, [])
-
-  // Most recent prescription items across all consultations
-  const lastPrescription = patient.clinicalRecords
-    .flatMap(r => r.prescriptions)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
-  const recentMedications = lastPrescription?.items ?? []
+  const activeDiagnoses = extractActiveDiagnoses(patient.clinicalRecords)
+  const recentMedications = extractRecentMedications(patient.clinicalRecords)
 
   return (
     <div className="space-y-6 max-w-5xl">

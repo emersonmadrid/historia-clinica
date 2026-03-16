@@ -14,9 +14,11 @@ export function PatientBriefing({ patientId, hasConsultations }: { patientId: st
   const [briefing, setBriefing] = useState<Briefing | null>(null)
   const [loading, setLoading] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState(false)
 
   const load = async () => {
     setLoading(true)
+    setError(false)
     try {
       const res = await fetch(`/api/pacientes/${patientId}/briefing`)
       if (!res.ok) throw new Error()
@@ -24,6 +26,7 @@ export function PatientBriefing({ patientId, hasConsultations }: { patientId: st
       setBriefing(data)
       setLoaded(true)
     } catch {
+      setError(true)
       setBriefing(null)
     } finally {
       setLoading(false)
@@ -60,6 +63,18 @@ export function PatientBriefing({ patientId, hasConsultations }: { patientId: st
         <div className="flex items-center gap-2 px-4 py-4 text-sm text-violet-500">
           <Loader2 className="h-4 w-4 animate-spin" />
           Analizando historial del paciente...
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="flex items-center justify-between px-4 py-3">
+          <p className="text-sm text-slate-500">No se pudo generar el briefing.</p>
+          <button
+            onClick={load}
+            className="text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors"
+          >
+            Reintentar
+          </button>
         </div>
       )}
 
