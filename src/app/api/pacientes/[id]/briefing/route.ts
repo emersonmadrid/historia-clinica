@@ -41,11 +41,11 @@ export async function GET(
         return acc
       }, [])
 
-    const lastPrescription = patient.clinicalRecords
-      .flatMap(r => r.prescriptions)[0]
-    const currentMedications = (lastPrescription?.items ?? []).map(
-      it => `${it.medication} ${it.dosage}`
-    )
+    const currentMedications = patient.clinicalRecords
+      .flatMap(r => r.prescriptions)
+      .flatMap(rx => rx.items)
+      .map(it => `${it.medication} ${it.dosage}`)
+      .filter((v, i, arr) => arr.indexOf(v) === i) // deduplicate
 
     const briefing = await generateBriefing({
       patientName: `${patient.firstName} ${patient.lastName}`,
