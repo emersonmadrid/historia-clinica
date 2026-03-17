@@ -12,7 +12,6 @@ import { toast } from '@/hooks/useToast'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -22,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { FormField } from '@/components/shared/FormField'
 
 const diagnosisSchema = z.object({
   code: z.string().min(1, 'Código requerido'),
@@ -51,27 +51,6 @@ const schema = z.object({
 })
 
 type FormData = z.infer<typeof schema>
-
-function FormField({
-  label,
-  error,
-  children,
-  hint,
-}: {
-  label: string
-  error?: string
-  children: React.ReactNode
-  hint?: string
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
-      {hint && <p className="text-xs text-slate-400">{hint}</p>}
-      {error && <p className="text-xs text-red-600">{error}</p>}
-    </div>
-  )
-}
 
 export default function EditarConsultaPage({
   params,
@@ -276,7 +255,7 @@ export default function EditarConsultaPage({
   if (loadingData) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-foreground-subtle" />
       </div>
     )
   }
@@ -296,12 +275,12 @@ export default function EditarConsultaPage({
           </Link>
         </Button>
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Editar Consulta</h2>
-          {patientName && <p className="text-sm text-slate-500">Paciente: {patientName}</p>}
+          <h2 className="text-xl font-bold text-foreground">Editar Consulta</h2>
+          {patientName && <p className="text-sm text-foreground-muted">Paciente: {patientName}</p>}
         </div>
       </div>
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+      <div className="rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground-muted">
         Está editando una consulta existente. Las recetas no se modifican aquí — gestionelas desde el detalle de la consulta.
       </div>
 
@@ -352,8 +331,8 @@ export default function EditarConsultaPage({
                 <Input type="number" placeholder="170" {...register('height')} />
               </FormField>
               <FormField label="IMC">
-                <div className="flex h-10 w-full items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
-                  {bmi ? `${bmi} kg/m²` : <span className="text-slate-400">Auto</span>}
+                <div className="flex h-10 w-full items-center rounded-md border border-border bg-background px-3 text-sm text-foreground-muted">
+                  {bmi ? `${bmi} kg/m²` : <span className="text-foreground-subtle">Auto</span>}
                 </div>
               </FormField>
               <FormField label="Glucosa (mg/dL)">
@@ -367,17 +346,19 @@ export default function EditarConsultaPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Formato SOAP</CardTitle>
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={handleGenerateSOAP}
               disabled={soapLoading}
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="shrink-0"
             >
               {soapLoading
                 ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /><span className="hidden sm:inline">Generando...</span></>
                 : <><Sparkles className="h-3.5 w-3.5" /><span className="hidden sm:inline">Generar con IA</span><span className="sm:hidden">IA</span></>
               }
-            </button>
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -415,21 +396,21 @@ export default function EditarConsultaPage({
           </CardHeader>
           <CardContent className="space-y-4">
             {diagnosisFields.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">
+              <p className="text-sm text-foreground-subtle text-center py-4">
                 No hay diagnósticos. Use el botón para agregar.
               </p>
             ) : (
               diagnosisFields.map((field, index) => (
-                <div key={field.id} className="rounded-lg border border-slate-200 p-4 space-y-3">
+                <div key={field.id} className="rounded-lg border border-border p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">
+                    <span className="text-xs font-semibold text-foreground-muted uppercase">
                       Diagnóstico {index + 1}
                     </span>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="h-7 w-7 text-danger hover:text-danger hover:bg-danger/10"
                       onClick={() => removeDiagnosis(index)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -512,7 +493,7 @@ export default function EditarConsultaPage({
         </Card>
 
         {/* Sticky save bar */}
-        <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 border-t border-slate-200 bg-white/95 backdrop-blur px-4 sm:px-6 py-4">
+        <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 border-t border-border bg-surface/95 backdrop-blur px-4 sm:px-6 py-4">
           <div className="flex items-center justify-end max-w-4xl mx-auto w-full">
             <div className="flex items-center gap-3">
               <Button variant="outline" type="button" asChild>

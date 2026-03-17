@@ -49,9 +49,9 @@ function formatDate(iso: string) {
 
 function FileIcon({ mimeType }: { mimeType: string }) {
   if (mimeType.startsWith('image/')) {
-    return <FileImage className="h-5 w-5 text-[#0EA5E9]" />
+    return <FileImage className="h-5 w-5 text-primary" />
   }
-  return <FileText className="h-5 w-5 text-slate-500" />
+  return <FileText className="h-5 w-5 text-foreground-muted" />
 }
 
 export function DocumentManager({ patientId, documents }: DocumentManagerProps) {
@@ -138,28 +138,27 @@ export function DocumentManager({ patientId, documents }: DocumentManagerProps) 
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-slate-900">Documentos del Paciente</h3>
+      <div className="mb-4 flex items-center justify-end">
         <Button size="sm" onClick={() => setOpen(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
-          Subir Documento
+          Subir documento
         </Button>
       </div>
 
       {/* Drop zone when no documents */}
       {documents.length === 0 ? (
         <div
-          className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors ${
-            dragOver ? 'border-[#0EA5E9] bg-[#F0F9FF]' : 'border-slate-200'
+          className={`border-2 border-dashed p-10 text-center transition-colors ${
+            dragOver ? 'border-primary bg-sky-50' : 'border-border'
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
         >
-          <Upload className="mx-auto h-8 w-8 text-slate-300 mb-3" />
-          <p className="text-sm text-slate-400">No hay documentos. Arrastra un archivo aquí o</p>
+          <Upload className="mx-auto h-8 w-8 text-border mb-3" />
+          <p className="text-sm text-foreground-subtle">No hay documentos. Arrastra un archivo aquí o</p>
           <button
-            className="mt-2 text-sm text-[#0EA5E9] hover:underline"
+            className="mt-2 text-sm text-primary hover:underline"
             onClick={() => setOpen(true)}
           >
             selecciona un archivo
@@ -175,22 +174,22 @@ export function DocumentManager({ patientId, documents }: DocumentManagerProps) 
           {documents.map((doc) => (
             <div
               key={doc.id}
-              className="flex items-center gap-3 rounded-lg border border-slate-100 p-4 hover:bg-slate-50"
+              className="flex items-center gap-3 border border-border-subtle p-4 hover:bg-background"
             >
               <FileIcon mimeType={doc.mimeType} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">{doc.name}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-medium text-foreground truncate">{doc.name}</p>
+                <p className="text-xs text-foreground-muted">
                   {formatBytes(doc.fileSize)} &bull; {formatDate(doc.createdAt)} &bull; {doc.uploadedBy.name}
                 </p>
                 {doc.description && (
-                  <p className="text-xs text-slate-400 mt-0.5 truncate">{doc.description}</p>
+                  <p className="text-xs text-foreground-subtle mt-0.5 truncate">{doc.description}</p>
                 )}
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <Button variant="ghost" size="icon" asChild title="Descargar">
                   <a href={doc.fileUrl} download={doc.name} target="_blank" rel="noopener noreferrer">
-                    <Download className="h-4 w-4 text-slate-500" />
+                    <Download className="h-4 w-4 text-foreground-muted" />
                   </a>
                 </Button>
                 <Button
@@ -213,9 +212,7 @@ export function DocumentManager({ patientId, documents }: DocumentManagerProps) 
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Subir Documento</DialogTitle>
-            <DialogDescription>
-              Exámenes, informes, imágenes u otros archivos del paciente (máx. 10 MB)
-            </DialogDescription>
+            <DialogDescription>Máximo 10 MB</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpload} className="space-y-4">
             <div className="space-y-2">
@@ -230,7 +227,7 @@ export function DocumentManager({ patientId, documents }: DocumentManagerProps) 
                 className="cursor-pointer"
               />
               {selectedFile && (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-foreground-muted">
                   Seleccionado: {selectedFile.name} ({formatBytes(selectedFile.size)})
                 </p>
               )}

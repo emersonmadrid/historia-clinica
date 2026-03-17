@@ -6,9 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Search } from 'lucide-react'
+import { ArrowLeft, Save, Search, ChevronDown } from 'lucide-react'
 import { toast } from '@/hooks/useToast'
 import { useDebounce } from '@/hooks/useDebounce'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { FormField } from '@/components/shared/FormField'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import type { Prisma } from '@prisma/client'
@@ -47,13 +48,17 @@ export default function NuevaCitaPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const preselectedPatientId = searchParams.get('patientId')
+  const preselectedDoctorId = searchParams.get('doctorId')
 
   const [isLoading, setIsLoading] = useState(false)
   const [patientSearch, setPatientSearch] = useState('')
   const [patients, setPatients] = useState<Patient[]>([])
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [selectedDoctorId, setSelectedDoctorId] = useState('')
+  const [doctorSearch, setDoctorSearch] = useState('')
   const [showPatientDropdown, setShowPatientDropdown] = useState(false)
+  const [showDoctorDropdown, setShowDoctorDropdown] = useState(false)
 
   const debouncedSearch = useDebounce(patientSearch, 300)
 
@@ -69,13 +74,31 @@ export default function NuevaCitaPage() {
     },
   })
 
-  // Load doctors
+  const selectedDoctor = doctors.find((doctor) => doctor.id === selectedDoctorId) ?? null
+  const filteredDoctors = doctors.filter((doctor) => {
+    const q = doctorSearch.trim().toLowerCase()
+    if (!q) return true
+    return (
+      doctor.name.toLowerCase().includes(q) ||
+      (doctor.speciality ?? '').toLowerCase().includes(q)
+    )
+  })
+
+  // Load doctors — auto-selects if doctorId is in URL
   useEffect(() => {
     fetch('/api/users')
       .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setDoctors(data) })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setDoctors(data)
+          if (preselectedDoctorId && data.find((d: Doctor) => d.id === preselectedDoctorId)) {
+            setSelectedDoctorId(preselectedDoctorId)
+            setValue('doctorId', preselectedDoctorId)
+          }
+        }
+      })
       .catch(() => {})
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Search patients
   useEffect(() => {
@@ -130,150 +153,199 @@ export default function NuevaCitaPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/citas">
+    <div className="mx-auto max-w-3xl space-y-5">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" asChild className="h-8 w-8 rounded-sm">
+          <Link href="/citas" aria-label="Volver a citas">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Nueva Cita</h2>
-          <p className="text-sm text-slate-500">Programar una cita médica</p>
-        </div>
+        <h2 className="text-xl font-bold text-foreground">Nueva cita</h2>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Datos de la Cita</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Patient Search */}
-            <FormField label="Paciente" required error={errors.patientId?.message}>
-              {selectedPatient ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                    <span className="font-medium">{selectedPatient.firstName} {selectedPatient.lastName}</span>
-                    <span className="ml-2 text-slate-500">{selectedPatient.documentNumber}</span>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedPatient(null)
-                      setValue('patientId', '')
-                      setPatientSearch('')
-                    }}
-                  >
-                    Cambiar
-                  </Button>
-                </div>
-              ) : (
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    placeholder="Buscar paciente por nombre o documento..."
-                    value={patientSearch}
-                    onChange={e => {
-                      setPatientSearch(e.target.value)
-                      setShowPatientDropdown(true)
-                    }}
-                    onFocus={() => setShowPatientDropdown(true)}
-                    className="pl-10"
-                  />
-                  {showPatientDropdown && patients.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border border-slate-200 bg-white shadow-md">
-                      {patients.map(p => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-slate-50 first:rounded-t-md last:rounded-b-md"
-                          onClick={() => {
-                            setSelectedPatient(p)
-                            setValue('patientId', p.id)
-                            setPatientSearch('')
-                            setShowPatientDropdown(false)
-                          }}
-                        >
-                          <span className="font-medium">{p.firstName} {p.lastName}</span>
-                          <span className="ml-2 text-slate-400 text-xs">{p.documentNumber}</span>
-                        </button>
-                      ))}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <Card className="rounded-none">
+          <CardContent className="p-0">
+            <div className="space-y-4 px-5 py-4">
+              <FormField label="Paciente" required error={errors.patientId?.message}>
+                {selectedPatient ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 border border-border bg-background px-3 py-2.5 text-sm">
+                      <span className="font-medium">{selectedPatient.firstName} {selectedPatient.lastName}</span>
+                      <span className="ml-2 text-foreground-muted">{selectedPatient.documentNumber}</span>
                     </div>
-                  )}
-                </div>
-              )}
-            </FormField>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedPatient(null)
+                        setValue('patientId', '')
+                        setPatientSearch('')
+                      }}
+                    >
+                      Cambiar
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-subtle" />
+                    <Input
+                      placeholder="Buscar paciente por nombre o documento..."
+                      value={patientSearch}
+                      onChange={e => {
+                        setPatientSearch(e.target.value)
+                        setShowPatientDropdown(true)
+                      }}
+                      onFocus={() => setShowPatientDropdown(true)}
+                      className="pl-10"
+                    />
+                    {showPatientDropdown && patients.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 border border-border bg-surface shadow-md">
+                        {patients.map(p => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-background"
+                            onClick={() => {
+                              setSelectedPatient(p)
+                              setValue('patientId', p.id)
+                              setPatientSearch('')
+                              setShowPatientDropdown(false)
+                            }}
+                          >
+                            <span className="font-medium">{p.firstName} {p.lastName}</span>
+                            <span className="ml-2 text-foreground-subtle text-xs">{p.documentNumber}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </FormField>
 
-            {/* Doctor */}
-            <FormField label="Doctor" required error={errors.doctorId?.message}>
-              {doctors.length > 0 ? (
-                <Select onValueChange={v => setValue('doctorId', v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar doctor..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {doctors.map(d => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}{d.speciality ? ` — ${d.speciality}` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
+              <FormField label="Doctor" required error={errors.doctorId?.message}>
+                {doctors.length > 0 ? (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowDoctorDropdown((open) => !open)}
+                      className="flex h-10 w-full items-center justify-between border border-border bg-surface px-3 py-2 text-left text-sm text-foreground hover:bg-background"
+                    >
+                      <span className={cn('truncate', !selectedDoctor && 'text-foreground-subtle')}>
+                        {selectedDoctor ? `${selectedDoctor.name}${selectedDoctor.speciality ? ` — ${selectedDoctor.speciality}` : ''}` : 'Seleccionar doctor...'}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-foreground-subtle" />
+                    </button>
+
+                    {showDoctorDropdown && (
+                      <div className="absolute left-0 right-0 top-full z-50 mt-1 border border-border bg-surface shadow-md">
+                        <div className="border-b border-border px-3 py-2">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-subtle" />
+                          <Input
+                            placeholder="Buscar doctor o especialidad..."
+                            value={doctorSearch}
+                            onChange={(e) => setDoctorSearch(e.target.value)}
+                            className="h-9 pl-10"
+                            autoFocus
+                          />
+                        </div>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto py-1">
+                          {filteredDoctors.length === 0 ? (
+                            <p className="px-3 py-2 text-sm text-foreground-muted">Sin resultados</p>
+                          ) : (
+                            filteredDoctors.map((doctor) => {
+                              const selected = selectedDoctorId === doctor.id
+                              return (
+                                <button
+                                  key={doctor.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedDoctorId(doctor.id)
+                                    setValue('doctorId', doctor.id, { shouldValidate: true })
+                                    setDoctorSearch('')
+                                    setShowDoctorDropdown(false)
+                                  }}
+                                  className={cn(
+                                    'flex w-full items-start justify-between px-3 py-2.5 text-left text-sm hover:bg-background',
+                                    selected && 'bg-primary-subtle'
+                                  )}
+                                >
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-foreground">{doctor.name}</p>
+                                    <p className="text-xs text-foreground-muted">{doctor.speciality || 'Sin especialidad'}</p>
+                                  </div>
+                                  <span
+                                    className={cn(
+                                      'mt-1 h-2.5 w-2.5 shrink-0 rounded-full border',
+                                      selected ? 'border-primary bg-primary' : 'border-border-interactive bg-surface'
+                                    )}
+                                    aria-hidden
+                                  />
+                                </button>
+                              )
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Input
+                    placeholder="ID del doctor"
+                    {...register('doctorId')}
+                  />
+                )}
+              </FormField>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="Fecha y hora" required error={errors.dateTime?.message}>
+                  <Input type="datetime-local" {...register('dateTime')} />
+                </FormField>
+
+                <FormField label="Duración" error={errors.duration?.message}>
+                  <Select defaultValue="30" onValueChange={v => setValue('duration', parseInt(v), { shouldValidate: true })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15 minutos</SelectItem>
+                      <SelectItem value="30">30 minutos</SelectItem>
+                      <SelectItem value="45">45 minutos</SelectItem>
+                      <SelectItem value="60">1 hora</SelectItem>
+                      <SelectItem value="90">1 hora 30 min</SelectItem>
+                      <SelectItem value="120">2 horas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              </div>
+
+              <FormField label="Motivo de consulta" required error={errors.reason?.message}>
                 <Input
-                  placeholder="ID del doctor"
-                  {...register('doctorId')}
+                  placeholder="Ej: control, reevaluación, dolor abdominal..."
+                  {...register('reason')}
                 />
-              )}
-            </FormField>
+              </FormField>
 
-            {/* Date and Time */}
-            <FormField label="Fecha y Hora" required error={errors.dateTime?.message}>
-              <Input type="datetime-local" {...register('dateTime')} />
-            </FormField>
-
-            {/* Duration */}
-            <FormField label="Duración" error={errors.duration?.message}>
-              <Select defaultValue="30" onValueChange={v => setValue('duration', parseInt(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="15">15 minutos</SelectItem>
-                  <SelectItem value="30">30 minutos</SelectItem>
-                  <SelectItem value="45">45 minutos</SelectItem>
-                  <SelectItem value="60">1 hora</SelectItem>
-                  <SelectItem value="90">1 hora 30 min</SelectItem>
-                  <SelectItem value="120">2 horas</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-
-            {/* Reason */}
-            <FormField label="Motivo de Consulta" required error={errors.reason?.message}>
-              <Input
-                placeholder="Ej: Control de rutina, Consulta por dolor..."
-                {...register('reason')}
-              />
-            </FormField>
-
-            {/* Notes */}
-            <FormField label="Notas adicionales">
-              <Textarea
-                placeholder="Instrucciones especiales, preparación..."
-                rows={3}
-                {...register('notes')}
-              />
-            </FormField>
+              <details className="border border-border bg-surface-alt">
+                <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-foreground marker:hidden">
+                  Notas opcionales
+                </summary>
+                <div className="border-t border-border px-3 py-3">
+                  <Textarea
+                    placeholder="Observaciones o preparación para la cita..."
+                    rows={3}
+                    {...register('notes')}
+                  />
+                </div>
+              </details>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-3 border-t border-border pt-2">
           <Button variant="outline" type="button" asChild>
             <Link href="/citas">Cancelar</Link>
           </Button>

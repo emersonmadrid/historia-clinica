@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -11,7 +10,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
 import {
@@ -24,7 +22,6 @@ import {
 import { toast } from '@/hooks/useToast'
 import { Plus, Pencil, Users, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
 
 interface User {
   id: string
@@ -42,13 +39,6 @@ const roleOptions = [
   { value: 'NURSE', label: 'Enfermero/a' },
   { value: 'RECEPTIONIST', label: 'Recepcionista' },
 ]
-
-function roleBadgeVariant(role: string): 'default' | 'secondary' | 'outline' | 'success' | 'warning' {
-  if (role === 'ADMIN') return 'default'
-  if (role === 'DOCTOR') return 'success'
-  if (role === 'NURSE') return 'warning'
-  return 'secondary'
-}
 
 function roleLabel(role: string) {
   return roleOptions.find((r) => r.value === role)?.label || role
@@ -160,32 +150,24 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <Breadcrumb items={[
-        { label: 'Configuración', href: '/configuracion' },
-        { label: 'Usuarios' },
-      ]} />
-
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-5xl space-y-5">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/configuracion">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8 rounded-sm">
+            <Link href="/configuracion" aria-label="Volver a configuración">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">Gestión de Usuarios</h2>
-            <p className="text-sm text-slate-500">Administra los usuarios del sistema</p>
-          </div>
+          <h2 className="text-xl font-bold text-foreground">Usuarios</h2>
         </div>
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
-          Nuevo Usuario
+          Nuevo usuario
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="rounded-none">
+        <CardHeader className="border-b border-border bg-surface-alt pb-4">
           <CardTitle className="text-base flex items-center gap-2">
             <Users className="h-4 w-4" />
             Usuarios ({users.length})
@@ -193,30 +175,27 @@ export default function UsuariosPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <p className="text-sm text-slate-400 py-8 text-center">Cargando...</p>
+            <p className="text-sm text-foreground-subtle py-8 text-center">Cargando...</p>
           ) : users.length === 0 ? (
-            <p className="text-sm text-slate-400 py-8 text-center">No hay usuarios registrados</p>
+            <p className="text-sm text-foreground-subtle py-8 text-center">No hay usuarios registrados</p>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-border-subtle">
               {users.map((user) => (
-                <div key={user.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E0F2FE] text-[#0284C7] text-sm font-bold">
-                    {user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                <div key={user.id} className="grid gap-3 px-5 py-4 hover:bg-background md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_140px_120px_40px] md:items-center">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{user.name}</p>
+                    <p className="text-xs text-foreground-muted">{user.email}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{user.name}</p>
-                    <p className="text-xs text-slate-500">{user.email}</p>
+                  <div className="min-w-0 text-xs text-foreground-muted">
+                    {user.speciality || 'Sin especialidad'}
                   </div>
-                  <Badge variant={roleBadgeVariant(user.role)}>
+                  <div className="text-xs text-foreground-muted">
                     {roleLabel(user.role)}
-                  </Badge>
-                  {user.speciality && (
-                    <span className="text-xs text-slate-500 hidden sm:inline">{user.speciality}</span>
-                  )}
-                  <Badge variant={user.active ? 'success' : 'outline'}>
+                  </div>
+                  <div className="text-xs text-foreground-muted">
                     {user.active ? 'Activo' : 'Inactivo'}
-                  </Badge>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(user)}>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm" onClick={() => openEdit(user)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </div>
@@ -231,7 +210,6 @@ export default function UsuariosPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Nuevo Usuario</DialogTitle>
-            <DialogDescription>Completa los datos para crear un nuevo usuario</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
@@ -298,7 +276,6 @@ export default function UsuariosPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Usuario</DialogTitle>
-            <DialogDescription>Modifica los datos del usuario</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4">
             <div className="space-y-2">
@@ -339,11 +316,11 @@ export default function UsuariosPage() {
                 role="switch"
                 aria-checked={editForm.active}
                 onClick={() => setEditForm({ ...editForm, active: !editForm.active })}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.active ? 'bg-[#0EA5E9]' : 'bg-slate-200'}`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.active ? 'bg-primary' : 'bg-border'}`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editForm.active ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
-              <span className="text-sm text-slate-600">{editForm.active ? 'Activo' : 'Inactivo'}</span>
+              <span className="text-sm text-foreground-muted">{editForm.active ? 'Activo' : 'Inactivo'}</span>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>

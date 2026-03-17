@@ -58,22 +58,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0EA5E9] shadow-lg">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg">
             <Stethoscope className="h-9 w-9 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Historia Clínica</h1>
-          <p className="mt-1 text-sm text-slate-500">Sistema de Gestión de Salud</p>
+          <h1 className="text-2xl font-bold text-foreground">Historia Clínica</h1>
+          <p className="mt-1 text-sm text-foreground-muted">Sistema de Gestión de Salud</p>
         </div>
 
         {/* Card */}
-        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-8 shadow-sm">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-slate-900">Iniciar Sesión</h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <h2 className="text-xl font-semibold text-foreground">Iniciar Sesión</h2>
+            <p className="mt-1 text-sm text-foreground-muted">
               Ingrese sus credenciales para acceder al sistema
             </p>
           </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowForgot(true)}
-                  className="text-xs text-[#0EA5E9] hover:text-[#0284C7] hover:underline"
+                  className="text-xs text-primary hover:text-primary-hover hover:underline"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
@@ -125,7 +125,7 @@ export default function LoginPage() {
                   type="button"
                   tabIndex={-1}
                   onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-subtle hover:text-foreground-muted"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -167,7 +167,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-foreground-subtle">
           Sistema seguro para profesionales de la salud
         </p>
       </div>
@@ -175,17 +175,14 @@ export default function LoginPage() {
       {/* Modal olvidé contraseña */}
       {showForgot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
-            <h3 className="text-base font-semibold text-slate-900 mb-2">Recuperar contraseña</h3>
-            <p className="text-sm text-slate-600 mb-4">
+          <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-lg">
+            <h3 className="text-base font-semibold text-foreground mb-2">Recuperar contraseña</h3>
+            <p className="text-sm text-foreground-muted mb-4">
               Contacta al administrador del sistema para restablecer tu contraseña.
             </p>
-            <button
-              onClick={() => setShowForgot(false)}
-              className="w-full rounded-lg bg-[#0EA5E9] px-4 py-2 text-sm font-medium text-white hover:bg-[#0284C7]"
-            >
+            <Button className="w-full" onClick={() => setShowForgot(false)}>
               Entendido
-            </button>
+            </Button>
           </div>
         </div>
       )}

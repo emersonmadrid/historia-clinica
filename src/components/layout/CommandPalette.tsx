@@ -123,28 +123,28 @@ export function CommandPalette() {
       onClick={() => setOpen(false)}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
       {/* Panel */}
       <div
-        className="relative w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+        className="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-surface shadow-2xl"
         onClick={e => e.stopPropagation()}
         onKeyDown={handleKey}
       >
         {/* Search input */}
-        <div className="flex items-center gap-3 border-b border-slate-100 px-4">
+        <div className="flex items-center gap-3 border-b border-border-subtle px-4">
           {loading
-            ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#0EA5E9]" />
-            : <Search className="h-4 w-4 shrink-0text-slate-400" />
+            ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+            : <Search className="h-4 w-4 shrink-0text-foreground-subtle" />
           }
           <input
             ref={inputRef}
             value={query}
             onChange={e => { setQuery(e.target.value); setSelectedIndex(0) }}
             placeholder="Buscar paciente, acción o página..."
-            className="flex-1 bg-transparent py-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+            className="flex-1 bg-transparent py-4 text-sm text-foreground placeholder:text-foreground-subtle outline-none"
           />
-          <kbd className="hidden shrink-0 items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 sm:inline-flex">
+          <kbd className="hidden shrink-0 items-center rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-foreground-subtle sm:inline-flex">
             ESC
           </kbd>
         </div>
@@ -152,7 +152,7 @@ export function CommandPalette() {
         {/* Results */}
         <div className="max-h-[360px] overflow-y-auto p-2">
           {query.length >= 2 && !loading && patientItems.length === 0 && (
-            <p className="py-6 text-center text-sm text-slate-400">Sin resultados para &ldquo;{query}&rdquo;</p>
+            <p className="py-6 text-center text-sm text-foreground-subtle">Sin resultados para &ldquo;{query}&rdquo;</p>
           )}
 
           {groups.map(group => {
@@ -162,7 +162,7 @@ export function CommandPalette() {
 
             return (
               <div key={group} className="mb-1">
-                <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-foreground-subtle">
                   {group}
                 </p>
                 {groupItems.map((item, i) => {
@@ -173,25 +173,25 @@ export function CommandPalette() {
                     <button
                       key={`${item.href}-${item.label}-${i}`}
                       className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all ${
-                        isActive ? 'bg-sky-50' : 'hover:bg-slate-50'
+                        isActive ? 'bg-sky-50' : 'hover:bg-background'
                       }`}
                       onClick={() => navigate(item.href)}
                       onMouseEnter={() => setSelectedIndex(idx)}
                     >
                       <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${
-                        isActive ? 'bg-[#0EA5E9]' : 'bg-slate-100'
+                        isActive ? 'bg-primary' : 'bg-border-subtle'
                       }`}>
-                        <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                        <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-white' : 'text-foreground-muted'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${isActive ? 'text-[#0EA5E9]' : 'text-slate-700'}`}>
+                        <p className={`text-sm font-medium truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>
                           {item.label}
                         </p>
                         {item.sub && (
-                          <p className="text-xs text-slate-400 truncate">{item.sub}</p>
+                          <p className="text-xs text-foreground-subtle truncate">{item.sub}</p>
                         )}
                       </div>
-                      <ArrowRight className={`h-3.5 w-3.5 shrink-0 transition-colors ${isActive ? 'text-[#0EA5E9]' : 'text-slate-200'}`} />
+                      <ArrowRight className={`h-3.5 w-3.5 shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-border'}`} />
                     </button>
                   )
                 })}
@@ -201,10 +201,10 @@ export function CommandPalette() {
         </div>
 
         {/* Footer hints */}
-        <div className="flex items-center gap-4 border-t border-slate-100 bg-slate-50 px-4 py-2">
+        <div className="flex items-center gap-4 border-t border-border-subtle bg-background px-4 py-2">
           {[['↑↓', 'navegar'], ['↵', 'abrir'], ['ESC', 'cerrar']].map(([key, label]) => (
-            <span key={key} className="flex items-center gap-1.5 text-[10px] text-slate-400">
-              <kbd className="rounded border border-slate-200 bg-white px-1 py-0.5 font-mono text-[10px]">{key}</kbd>
+            <span key={key} className="flex items-center gap-1.5 text-[10px] text-foreground-subtle">
+              <kbd className="rounded border border-border bg-surface px-1 py-0.5 font-mono text-[10px]">{key}</kbd>
               {label}
             </span>
           ))}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   BarChart,
   Bar,
@@ -17,7 +18,7 @@ import {
   LineChart,
   Line,
 } from 'recharts'
-import { BarChart2 } from 'lucide-react'
+import { RefreshCw, AlertCircle } from 'lucide-react'
 
 interface ReportesData {
   consultasPorMes: { mes: string; cantidad: number }[]
@@ -27,45 +28,55 @@ interface ReportesData {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  Agendada: '#0EA5E9',
-  Confirmada: '#22c55e',
+  Agendada: '#94a3b8',
+  Confirmada: '#0D9488',
   Cancelada: '#ef4444',
-  Completada: '#8b5cf6',
+  Completada: '#64748b',
   'No asistió': '#f59e0b',
 }
 
-const PIE_COLORS = ['#0EA5E9', '#ec4899', '#8b5cf6', '#22c55e']
+const PIE_COLORS = ['#0D9488', '#64748b', '#94a3b8', '#0f766e']
 
 export default function ReportesPage() {
   const [data, setData] = useState<ReportesData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchReportes() {
-      try {
-        const res = await fetch('/api/reportes')
-        if (!res.ok) throw new Error('Error al cargar reportes')
-        const json = await res.json()
-        setData(json)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error desconocido')
-      } finally {
-        setLoading(false)
-      }
+  async function fetchReportes() {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/reportes')
+      if (!res.ok) throw new Error('Error al cargar reportes')
+      const json = await res.json()
+      setData(json)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido')
+    } finally {
+      setLoading(false)
     }
-    fetchReportes()
-  }, [])
+  }
+
+  useEffect(() => { fetchReportes() }, [])
+
+  const pageHeader = <h2 className="text-xl font-bold text-foreground">Reportes</h2>
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Reportes</h2>
-          <p className="text-sm text-slate-500">Estadísticas del sistema</p>
-        </div>
-        <div className="flex items-center justify-center h-48">
-          <p className="text-sm text-slate-400">Cargando datos...</p>
+      <div className="space-y-5">
+        {pageHeader}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="border animate-pulse border-border bg-surface">
+              <div className="p-5 pb-2">
+                <div className="h-4 w-32 rounded bg-background" />
+                <div className="h-3 w-20 rounded mt-1.5 bg-background" />
+              </div>
+              <div className="px-5 pb-5">
+                <div className="h-[240px] rounded-lg bg-background" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )
@@ -73,36 +84,30 @@ export default function ReportesPage() {
 
   if (error || !data) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Reportes</h2>
-          <p className="text-sm text-slate-500">Estadísticas del sistema</p>
-        </div>
-        <div className="flex items-center justify-center h-48">
-          <p className="text-sm text-red-500">{error || 'No se pudieron cargar los reportes'}</p>
+      <div className="space-y-5">
+        {pageHeader}
+        <div className="flex flex-col items-center justify-center border py-12 text-center border-border bg-surface">
+          <AlertCircle className="mb-3 h-6 w-6 text-danger" />
+          <h3 className="text-sm font-semibold mb-1 text-foreground">No se pudieron cargar los reportes</h3>
+          <p className="text-xs mb-4 text-foreground-muted">{error}</p>
+          <Button variant="outline" onClick={fetchReportes}>
+            <RefreshCw className="h-3.5 w-3.5 mr-2" />
+            Reintentar
+          </Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E0F2FE]">
-          <BarChart2 className="h-5 w-5 text-[#0EA5E9]" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Reportes</h2>
-          <p className="text-sm text-slate-500">Estadísticas y métricas del sistema</p>
-        </div>
-      </div>
+    <div className="space-y-5">
+      {pageHeader}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Consultas por mes */}
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
             <CardTitle className="text-base">Consultas por Mes</CardTitle>
-            <p className="text-xs text-slate-500">Últimos 6 meses</p>
+            <p className="text-xs text-foreground-muted">Últimos 6 meses</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
@@ -124,17 +129,16 @@ export default function ReportesPage() {
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
                   formatter={(value) => [value ?? 0, 'Consultas']}
                 />
-                <Bar dataKey="cantidad" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="cantidad" fill="#0D9488" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Citas por estado */}
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
             <CardTitle className="text-base">Citas por Estado</CardTitle>
-            <p className="text-xs text-slate-500">Total histórico</p>
+            <p className="text-xs text-foreground-muted">Total histórico</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
@@ -169,11 +173,10 @@ export default function ReportesPage() {
           </CardContent>
         </Card>
 
-        {/* Pacientes por género */}
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
             <CardTitle className="text-base">Pacientes por Género</CardTitle>
-            <p className="text-xs text-slate-500">Distribución de pacientes activos</p>
+            <p className="text-xs text-foreground-muted">Distribución de pacientes activos</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
@@ -206,11 +209,10 @@ export default function ReportesPage() {
           </CardContent>
         </Card>
 
-        {/* Citas por semana */}
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
             <CardTitle className="text-base">Citas por Semana</CardTitle>
-            <p className="text-xs text-slate-500">Últimas 8 semanas</p>
+            <p className="text-xs text-foreground-muted">Últimas 8 semanas</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
@@ -235,9 +237,9 @@ export default function ReportesPage() {
                 <Line
                   type="monotone"
                   dataKey="cantidad"
-                  stroke="#0EA5E9"
+                  stroke="#0D9488"
                   strokeWidth={2}
-                  dot={{ fill: '#0EA5E9', r: 4 }}
+                  dot={{ fill: '#0D9488', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>

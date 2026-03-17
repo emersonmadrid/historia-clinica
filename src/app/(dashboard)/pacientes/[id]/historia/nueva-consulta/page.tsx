@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, use } from 'react'
-import { useForm, useFieldArray, Controller } from 'react-hook-form'
+import { useForm, useFieldArray, Controller, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -9,7 +9,6 @@ import Link from 'next/link'
 import { ArrowLeft, Plus, Trash2, Save, Pill, ShieldAlert, Sparkles, Loader2, Calendar } from 'lucide-react'
 import { CIE10Input } from './CIE10Input'
 import { toast } from '@/hooks/useToast'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,7 +21,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 
 const diagnosisSchema = z.object({
   code: z.string().min(1, 'Código requerido'),
@@ -71,6 +69,40 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
+type ConsultationPayload = {
+  patientId: string
+  reason: string
+  subjective: string | null
+  objective: string | null
+  assessment: string | null
+  plan: string | null
+  notes: string | null
+  vitalSigns?: {
+    bloodPressureSys: number | null
+    bloodPressureDia: number | null
+    heartRate: number | null
+    respiratoryRate: number | null
+    temperature: number | null
+    oxygenSat: number | null
+    weight: number | null
+    height: number | null
+    bmi: number | null
+    glucoseLevel: number | null
+  }
+  diagnoses: NonNullable<FormData['diagnoses']>
+  prescriptions: Array<{
+    notes?: string
+    items: Array<{
+      medication: string
+      dosage: string
+      frequency: string
+      duration: string
+      quantity?: string
+      instructions?: string
+    }>
+  }>
+}
+
 function FormField({
   label,
   error,
@@ -86,7 +118,7 @@ function FormField({
     <div className="space-y-1.5">
       <Label>{label}</Label>
       {children}
-      {hint && <p className="text-xs text-slate-400">{hint}</p>}
+      {hint && <p className="text-xs text-foreground-subtle">{hint}</p>}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   )
@@ -203,7 +235,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
     setIsLoading(true)
     const bmi = calculateBMI()
 
-    const payload = {
+    const payload: ConsultationPayload = {
       patientId,
       reason: data.reason,
       subjective: data.subjective || null,
@@ -235,9 +267,9 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
     }
 
     // Remove vitalSigns if all null
-    const hasVitalSigns = Object.values(payload.vitalSigns).some(v => v !== null)
+    const hasVitalSigns = payload.vitalSigns ? Object.values(payload.vitalSigns).some(v => v !== null) : false
     if (!hasVitalSigns) {
-      ;(payload as any).vitalSigns = undefined
+      delete payload.vitalSigns
     }
 
     try {
@@ -324,38 +356,32 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
   }, [isDirty])
 
   return (
-    <div className="space-y-6 w-full max-w-4xl mx-auto">
-      <Breadcrumb items={[
-        { label: 'Pacientes', href: '/pacientes' },
-        { label: patientName || 'Paciente', href: `/pacientes/${patientId}` },
-        { label: 'Nueva Consulta' },
-      ]} />
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/pacientes/${patientId}`}>
+    <div className="mx-auto w-full max-w-4xl space-y-5">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" asChild className="h-8 w-8 rounded-sm">
+          <Link href={`/pacientes/${patientId}`} aria-label="Volver al paciente">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div>
-          <h2 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Nueva Consulta</h2>
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold text-foreground">Nueva consulta</h2>
           {patientName && (
-            <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>Paciente: {patientName}</p>
+            <p className="truncate text-sm text-foreground-muted">{patientName}</p>
           )}
         </div>
       </div>
 
       {/* Banner: cita vinculada */}
       {citaReason && (
-        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2.5 flex items-center gap-2 text-sm text-sky-700">
+        <div className="flex items-center gap-2 border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm text-sky-700">
           <Calendar className="h-4 w-4 shrink-0" />
-          Motivo pre-cargado desde la cita agendada. Puedes modificarlo si es necesario.
+          Motivo precargado desde cita.
         </div>
       )}
 
       {/* Allergy banner */}
       {patientAllergies.length > 0 && (
-        <div className={`rounded-lg border px-4 py-3 flex items-start gap-3 ${
+        <div className={`flex items-start gap-3 border px-4 py-3 ${
           patientAllergies.some(a => a.severity === 'SEVERE')
             ? 'border-red-200 bg-red-50'
             : 'border-amber-200 bg-amber-50'
@@ -363,18 +389,18 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
           <ShieldAlert className={`h-5 w-5 shrink-0 mt-0.5 ${patientAllergies.some(a => a.severity === 'SEVERE') ? 'text-red-600' : 'text-amber-600'}`} />
           <div>
             <p className={`text-sm font-semibold ${patientAllergies.some(a => a.severity === 'SEVERE') ? 'text-red-700' : 'text-amber-700'}`}>
-              Alergias registradas — verificar antes de prescribir
+              Alergias registradas
             </p>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {patientAllergies.map((a, i) => (
                 <span
                   key={i}
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  className={`inline-flex items-center border px-2.5 py-0.5 text-xs font-medium ${
                     a.severity === 'SEVERE'
-                      ? 'bg-red-100 text-red-700 border border-red-200'
+                      ? 'border-red-200 bg-red-100 text-red-700'
                       : a.severity === 'MODERATE'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'bg-yellow-100 text-yellow-700'
+                      ? 'border-orange-200 bg-orange-100 text-orange-700'
+                      : 'border-yellow-200 bg-yellow-100 text-yellow-700'
                   }`}
                 >
                   {a.allergen}{a.reaction ? ` (${a.reaction})` : ''}
@@ -385,11 +411,10 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Reason */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Motivo de Consulta</CardTitle>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
+            <CardTitle className="text-base">Motivo de consulta</CardTitle>
           </CardHeader>
           <CardContent>
             <FormField label="Motivo" error={errors.reason?.message}>
@@ -401,10 +426,9 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
-        {/* Vital Signs */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Signos Vitales</CardTitle>
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
+            <CardTitle className="text-base">Signos vitales</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -442,8 +466,8 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
               </FormField>
 
               <FormField label="IMC">
-                <div className="flex h-10 w-full items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
-                  {bmi ? `${bmi} kg/m²` : <span className="text-slate-400">Auto</span>}
+                <div className="flex h-10 w-full items-center rounded-md border border-border bg-background px-3 text-sm text-foreground-muted">
+                  {bmi ? `${bmi} kg/m²` : <span className="text-foreground-subtle">Auto</span>}
                 </div>
               </FormField>
 
@@ -454,9 +478,8 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
-        {/* SOAP */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <Card className="rounded-none">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border bg-surface-alt pb-4">
             <CardTitle className="text-base">Formato SOAP</CardTitle>
             <button
               type="button"
@@ -519,10 +542,9 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
-        {/* Diagnoses */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Diagnósticos (CIE-10)</CardTitle>
+        <Card className="rounded-none">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-border bg-surface-alt pb-4">
+            <CardTitle className="text-base">Diagnósticos</CardTitle>
             <Button
               type="button"
               variant="outline"
@@ -537,14 +559,14 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
           </CardHeader>
           <CardContent className="space-y-4">
             {diagnosisFields.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">
+              <p className="text-sm text-foreground-subtle text-center py-4">
                 No hay diagnósticos agregados. Use el botón para agregar.
               </p>
             ) : (
               diagnosisFields.map((field, index) => (
-                <div key={field.id} className="rounded-lg border border-slate-200 p-4 space-y-3">
+                <div key={field.id} className="rounded-lg border border-border p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">
+                    <span className="text-xs font-semibold text-foreground-muted uppercase">
                       Diagnóstico {index + 1}
                     </span>
                     <Button
@@ -573,8 +595,8 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
                               codeField.onChange(code)
                               descField.onChange(description)
                             }}
-                            codeProps={{ ...codeField, onChange: codeField.onChange as any }}
-                            descriptionProps={{ ...descField, onChange: descField.onChange as any }}
+                            codeProps={{ ...codeField, onChange: codeField.onChange as React.ChangeEventHandler<HTMLInputElement> }}
+                            descriptionProps={{ ...descField, onChange: descField.onChange as React.ChangeEventHandler<HTMLInputElement> }}
                             codeError={errors.diagnoses?.[index]?.code?.message}
                             descriptionError={errors.diagnoses?.[index]?.description?.message}
                           />
@@ -628,12 +650,11 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
-        {/* Prescriptions */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="rounded-none">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-border bg-surface-alt pb-4">
             <CardTitle className="text-base flex items-center gap-2">
-              <Pill className="h-4 w-4 text-[#0EA5E9]" />
-              Recetas (opcional)
+              <Pill className="h-4 w-4 text-primary" />
+              Recetas
             </CardTitle>
             <Button
               type="button"
@@ -647,7 +668,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
           </CardHeader>
           <CardContent className="space-y-6">
             {rxFields.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">
+              <p className="text-sm text-foreground-subtle text-center py-4">
                 No hay recetas agregadas. Use el botón para agregar una receta con medicamentos.
               </p>
             ) : (
@@ -665,10 +686,9 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
-        {/* Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Notas Adicionales</CardTitle>
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
+            <CardTitle className="text-base">Notas</CardTitle>
           </CardHeader>
           <CardContent>
             <Textarea
@@ -680,7 +700,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
         </Card>
 
         {/* Sticky save bar */}
-        <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 border-t border-slate-200 bg-white/95 backdrop-blur px-4 sm:px-6 py-4">
+        <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 border-t border-border bg-surface/95 backdrop-blur px-4 sm:px-6 py-4">
           <div className="flex items-center justify-end max-w-4xl mx-auto w-full">
             <div className="flex items-center gap-3">
               <Button variant="outline" type="button" asChild>
@@ -719,9 +739,9 @@ function RxBlock({
   removeRx,
 }: {
   rxIndex: number
-  control: any
-  register: any
-  errors: any
+  control: Control<FormData>
+  register: UseFormRegister<FormData>
+  errors: FieldErrors<FormData>
   removeRx: (index: number) => void
 }) {
   const { fields: itemFields, append: appendItem, remove: removeItem } = useFieldArray({
@@ -730,9 +750,9 @@ function RxBlock({
   })
 
   return (
-    <div className="rounded-lg border border-[#A5F3FC] bg-[#F0F9FF]/30 p-4 space-y-4">
+    <div className="rounded-lg border border-sky-200 bg-sky-50/30 p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-[#075985] flex items-center gap-1.5">
+        <span className="text-sm font-semibold text-sky-800 flex items-center gap-1.5">
           <Pill className="h-4 w-4" />
           Receta {rxIndex + 1}
         </span>
@@ -750,9 +770,9 @@ function RxBlock({
       {/* Medication items */}
       <div className="space-y-3">
         {itemFields.map((itemField, itemIndex) => (
-          <div key={itemField.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-3">
+          <div key={itemField.id} className="rounded-lg border border-border bg-surface p-3 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase">
+              <span className="text-xs font-semibold text-foreground-muted uppercase">
                 Medicamento {itemIndex + 1}
               </span>
               {itemFields.length > 1 && (
@@ -810,14 +830,14 @@ function RxBlock({
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label>Cantidad <span className="text-slate-400">(opcional)</span></Label>
+                <Label>Cantidad <span className="text-foreground-subtle">(opcional)</span></Label>
                 <Input
                   placeholder="Ej: 21 tabletas"
                   {...register(`prescriptions.${rxIndex}.items.${itemIndex}.quantity`)}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Instrucciones <span className="text-slate-400">(opcional)</span></Label>
+                <Label>Instrucciones <span className="text-foreground-subtle">(opcional)</span></Label>
                 <Input
                   placeholder="Ej: Tomar con alimentos"
                   {...register(`prescriptions.${rxIndex}.items.${itemIndex}.instructions`)}
@@ -841,7 +861,7 @@ function RxBlock({
 
       {/* Prescription notes */}
       <div className="space-y-1.5">
-        <Label>Indicaciones generales <span className="text-slate-400">(opcional)</span></Label>
+        <Label>Indicaciones generales <span className="text-foreground-subtle">(opcional)</span></Label>
         <Textarea
           placeholder="Ej: Reposo relativo, abundantes líquidos..."
           rows={2}

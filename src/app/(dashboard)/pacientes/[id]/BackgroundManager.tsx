@@ -45,10 +45,6 @@ const bgTypeOptions = [
   { value: 'OBSTETRIC', label: 'Obstétrico' },
 ]
 
-function bgTypeLabel(type: string) {
-  return bgTypeOptions.find((t) => t.value === type)?.label || type
-}
-
 function formatDate(date: string | null) {
   if (!date) return null
   return new Date(date).toLocaleDateString('es', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -122,31 +118,30 @@ export function BackgroundManager({ patientId, backgrounds }: BackgroundManagerP
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-slate-900">Antecedentes Médicos</h3>
+      <div className="mb-4 flex items-center justify-end">
         <Button size="sm" onClick={() => setOpen(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
-          Agregar Antecedente
+          Agregar antecedente
         </Button>
       </div>
 
       {backgrounds.length === 0 ? (
-        <p className="text-sm text-slate-400 py-4 text-center">No hay antecedentes registrados</p>
+        <p className="text-sm text-foreground-subtle py-4 text-center">No hay antecedentes registrados</p>
       ) : (
         <div className="space-y-6">
           {grouped.map((group) => (
             <div key={group.type}>
-              <h4 className="text-sm font-semibold text-slate-700 mb-2">{group.label}</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-2">{group.label}</h4>
               <div className="space-y-2">
                 {group.items.map((bg) => (
-                  <div key={bg.id} className="flex items-start gap-3 rounded-lg border border-slate-100 p-3 bg-slate-50">
+                  <div key={bg.id} className="flex items-start gap-3 border border-border-subtle bg-background p-3">
                     <div className="flex-1">
-                      <p className="text-sm text-slate-900">{bg.description}</p>
+                      <p className="text-sm text-foreground">{bg.description}</p>
                       {bg.date && (
-                        <p className="text-xs text-slate-500 mt-1">{formatDate(bg.date)}</p>
+                        <p className="text-xs text-foreground-muted mt-1">{formatDate(bg.date)}</p>
                       )}
                       {bg.notes && (
-                        <p className="text-xs text-slate-500 mt-1 italic">{bg.notes}</p>
+                        <p className="text-xs text-foreground-muted mt-1 italic">{bg.notes}</p>
                       )}
                     </div>
                     <Button
@@ -170,7 +165,7 @@ export function BackgroundManager({ patientId, backgrounds }: BackgroundManagerP
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Agregar Antecedente</DialogTitle>
-            <DialogDescription>Registra un nuevo antecedente médico</DialogDescription>
+            <DialogDescription>Complete los datos</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">

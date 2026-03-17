@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
@@ -16,38 +16,34 @@ export function DashboardShell({ user, children }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
 
-  useEffect(() => { setSidebarOpen(false) }, [pathname])
-
-  useEffect(() => {
-    if (localStorage.getItem('sidebar-collapsed') === 'true') setCollapsed(true)
-  }, [])
-
   const handleToggle = () => {
     setCollapsed(c => {
       const next = !c
-      localStorage.setItem('sidebar-collapsed', String(next))
       return next
     })
   }
 
   return (
-    <div className="flex min-h-screen w-full" style={{ backgroundColor: 'var(--background)' }}>
+    <div className="flex min-h-screen w-full bg-background text-foreground">
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
       <CommandPalette />
       <Sidebar
+        key={pathname}
         user={user}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         collapsed={collapsed}
         onToggle={handleToggle}
       />
-      <div
-        className={`flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 ease-in-out ${collapsed ? 'lg:pl-16' : 'lg:pl-[220px]'}`}
-      >
+      <div className={`flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 ease-in-out ${collapsed ? 'lg:pl-[60px]' : 'lg:pl-[244px]'}`}>
         <Header user={user} onMenuToggle={() => setSidebarOpen(o => !o)} />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main className="flex-1 px-4 pb-8 pt-4 sm:px-5 sm:pb-10 sm:pt-5 lg:px-6">
+          <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   )

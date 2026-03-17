@@ -108,32 +108,31 @@ export function AllergyManager({ patientId, allergies }: AllergyManagerProps) {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-slate-900">Alergias Registradas</h3>
+      <div className="mb-4 flex items-center justify-end">
         <Button size="sm" onClick={() => setOpen(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
-          Agregar Alergia
+          Agregar alergia
         </Button>
       </div>
 
       {allergies.length === 0 ? (
-        <p className="text-sm text-slate-400 py-4 text-center">No hay alergias registradas</p>
+        <p className="text-sm text-foreground-subtle py-4 text-center">No hay alergias registradas</p>
       ) : (
         <div className="space-y-3">
           {allergies.map((allergy) => (
-            <div key={allergy.id} className="flex items-start gap-3 rounded-lg border border-slate-100 p-4">
+            <div key={allergy.id} className="flex items-start gap-3 border border-border-subtle p-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-slate-900 text-sm">{allergy.allergen}</span>
+                  <span className="font-medium text-foreground text-sm">{allergy.allergen}</span>
                   <Badge variant={severityVariant(allergy.severity)}>
                     {severityLabel(allergy.severity)}
                   </Badge>
                 </div>
                 {allergy.reaction && (
-                  <p className="text-sm text-slate-600">Reacción: {allergy.reaction}</p>
+                  <p className="text-sm text-foreground-muted">Reacción: {allergy.reaction}</p>
                 )}
                 {allergy.notes && (
-                  <p className="text-xs text-slate-500 mt-1">{allergy.notes}</p>
+                  <p className="text-xs text-foreground-muted mt-1">{allergy.notes}</p>
                 )}
               </div>
               <Button
@@ -154,7 +153,7 @@ export function AllergyManager({ patientId, allergies }: AllergyManagerProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Agregar Alergia</DialogTitle>
-            <DialogDescription>Registra una nueva alergia del paciente</DialogDescription>
+            <DialogDescription>Complete los datos</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">

@@ -118,7 +118,7 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+        <h4 className="text-xs font-semibold text-foreground-muted uppercase tracking-wide flex items-center gap-1.5">
           <Pill className="h-3.5 w-3.5" />
           Recetas
         </h4>
@@ -129,17 +129,17 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
       </div>
 
       {initial.length === 0 ? (
-        <p className="text-xs text-slate-400 py-2">No hay recetas en esta consulta</p>
+        <p className="text-xs text-foreground-subtle py-2">No hay recetas en esta consulta</p>
       ) : (
         <div className="space-y-3">
           {initial.map((rx) => (
-            <div key={rx.id} className="rounded-lg border border-[#A5F3FC] bg-[#F0F9FF]/50 p-3">
+            <div key={rx.id} className="rounded-lg border border-sky-200 bg-sky-50/50 p-3">
               <div className="flex items-start justify-between mb-2">
-                <span className="text-xs text-slate-500">Dr. {rx.doctor.name}</span>
+                <span className="text-xs text-foreground-muted">Dr. {rx.doctor.name}</span>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="h-6 w-6" asChild title="Imprimir receta">
                     <a href={`/api/recetas/${rx.id}/pdf`} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-3.5 w-3.5 text-[#0EA5E9]" />
+                      <Download className="h-3.5 w-3.5 text-primary" />
                     </a>
                   </Button>
                   <Button
@@ -157,17 +157,17 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
               <div className="space-y-1.5">
                 {rx.items.map((item, i) => (
                   <div key={item.id} className="text-sm">
-                    <span className="font-medium text-slate-800">{i + 1}. {item.medication} {item.dosage}</span>
-                    <span className="text-slate-500"> — {item.frequency}, {item.duration}</span>
-                    {item.quantity && <span className="text-slate-500"> ({item.quantity})</span>}
+                    <span className="font-medium text-foreground">{i + 1}. {item.medication} {item.dosage}</span>
+                    <span className="text-foreground-muted"> — {item.frequency}, {item.duration}</span>
+                    {item.quantity && <span className="text-foreground-muted"> ({item.quantity})</span>}
                     {item.instructions && (
-                      <p className="text-xs text-slate-400 italic ml-4">{item.instructions}</p>
+                      <p className="text-xs text-foreground-subtle italic ml-4">{item.instructions}</p>
                     )}
                   </div>
                 ))}
               </div>
               {rx.notes && (
-                <p className="mt-2 text-xs text-slate-500 border-t border-[#A5F3FC] pt-2">{rx.notes}</p>
+                <p className="mt-2 text-xs text-foreground-muted border-t border-sky-200 pt-2">{rx.notes}</p>
               )}
             </div>
           ))}
@@ -182,9 +182,9 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             {items.map((item, i) => (
-              <div key={i} className="rounded-lg border border-slate-200 p-4 space-y-3">
+              <div key={i} className="rounded-lg border border-border p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-500 uppercase">Medicamento {i + 1}</span>
+                  <span className="text-xs font-semibold text-foreground-muted uppercase">Medicamento {i + 1}</span>
                   {items.length > 1 && (
                     <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" onClick={() => removeItem(i)}>
                       <Trash2 className="h-4 w-4" />
@@ -229,7 +229,7 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Cantidad <span className="text-slate-400">(opcional)</span></Label>
+                    <Label>Cantidad <span className="text-foreground-subtle">(opcional)</span></Label>
                     <Input
                       placeholder="Ej: 21 tabletas"
                       value={item.quantity}
@@ -237,7 +237,7 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Instrucciones <span className="text-slate-400">(opcional)</span></Label>
+                    <Label>Instrucciones <span className="text-foreground-subtle">(opcional)</span></Label>
                     <Input
                       placeholder="Ej: Tomar con alimentos"
                       value={item.instructions}
@@ -254,7 +254,7 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
             </Button>
 
             <div className="space-y-1.5">
-              <Label>Indicaciones generales <span className="text-slate-400">(opcional)</span></Label>
+              <Label>Indicaciones generales <span className="text-foreground-subtle">(opcional)</span></Label>
               <Textarea
                 placeholder="Ej: Reposo relativo, abundantes líquidos..."
                 rows={2}

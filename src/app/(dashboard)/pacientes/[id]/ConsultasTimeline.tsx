@@ -20,11 +20,13 @@ export function ConsultasTimeline({ records, patientId }: Props) {
 
   if (records.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <ClipboardList className="mx-auto h-12 w-12 text-slate-300" />
-          <h3 className="mt-4 text-sm font-medium text-slate-900">Sin consultas registradas</h3>
-          <p className="mt-1 text-sm text-slate-500">Registre la primera consulta de este paciente.</p>
+      <Card className="rounded-none">
+        <CardContent className="py-14 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-border bg-background">
+            <ClipboardList className="h-7 w-7 text-foreground-subtle" />
+          </div>
+          <h3 className="text-sm font-semibold text-foreground">Sin consultas registradas</h3>
+          <p className="mt-1 text-sm text-foreground-muted">Registre la primera consulta.</p>
           <Button asChild className="mt-4">
             <Link href={`/pacientes/${patientId}/historia/nueva-consulta`}>
               <Plus className="mr-2 h-4 w-4" />
@@ -42,11 +44,11 @@ export function ConsultasTimeline({ records, patientId }: Props) {
   return (
     <div className="space-y-3">
       <div className="relative space-y-3">
-        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-200" />
+        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border" />
         {shown.map((record, index) => (
           <div key={record.id} className="relative pl-14">
-            <div className="absolute left-4 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#0EA5E9] bg-white">
-              <div className="h-2 w-2 rounded-full bg-[#0EA5E9]" />
+            <div className="absolute left-4 flex h-5 w-5 items-center justify-center rounded-full border-2 border-primary bg-surface">
+              <div className="h-2 w-2 rounded-full bg-primary" />
             </div>
             <ConsultaCard record={record} patientId={patientId} defaultOpen={index === 0} />
           </div>
@@ -56,11 +58,13 @@ export function ConsultasTimeline({ records, patientId }: Props) {
       {remaining > 0 && (
         <button
           onClick={() => setVisible(v => v + PAGE_SIZE)}
-          className="w-full flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2.5 text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+          className="flex w-full items-center justify-center gap-2 border border-dashed border-border py-3 text-sm font-medium text-foreground-muted transition-all hover:border-primary hover:bg-primary-subtle hover:text-primary"
         >
           <ChevronDown className="h-4 w-4" />
-          Cargar {Math.min(remaining, PAGE_SIZE)} consultas más
-          <span className="text-xs text-slate-400">({remaining} restantes)</span>
+          Ver {Math.min(remaining, PAGE_SIZE)} consultas anteriores
+          {remaining > PAGE_SIZE && (
+            <span className="text-xs opacity-60">({remaining} en total)</span>
+          )}
         </button>
       )}
     </div>

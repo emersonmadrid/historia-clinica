@@ -58,10 +58,10 @@ export function QuickAddAllergyButton({ patientId }: { patientId: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 transition-colors"
+        className="flex h-5 w-5 items-center justify-center rounded-full bg-border hover:bg-border-interactive transition-colors"
         title="Agregar alergia"
       >
-        <Plus className="h-3 w-3 text-slate-600" />
+        <Plus className="h-3 w-3 text-foreground-muted" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

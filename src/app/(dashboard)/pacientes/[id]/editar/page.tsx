@@ -12,7 +12,6 @@ import { toast } from '@/hooks/useToast'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -22,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { FormField } from '@/components/shared/FormField'
 
 const schema = z.object({
   firstName: z.string().min(1, 'Nombre requerido'),
@@ -45,29 +45,6 @@ const schema = z.object({
 })
 
 type FormData = z.infer<typeof schema>
-
-function FormField({
-  label,
-  error,
-  required,
-  children,
-}: {
-  label: string
-  error?: string
-  required?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label>
-        {label}
-        {required && <span className="ml-1 text-red-500">*</span>}
-      </Label>
-      {children}
-      {error && <p className="text-xs text-red-600">{error}</p>}
-    </div>
-  )
-}
 
 export default function EditarPacientePage() {
   const router = useRouter()
@@ -141,7 +118,7 @@ export default function EditarPacientePage() {
 
   if (loadError) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      <div className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
         {loadError}
       </div>
     )
@@ -161,8 +138,8 @@ export default function EditarPacientePage() {
           </Link>
         </Button>
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Editar Paciente</h2>
-          <p className="text-sm text-slate-500">Modifica los datos del paciente</p>
+          <h2 className="text-xl font-bold text-foreground">Editar Paciente</h2>
+          <p className="text-sm text-foreground-muted">Modifica los datos del paciente</p>
         </div>
       </div>
 

@@ -92,26 +92,21 @@ export default function NuevoPacientePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/pacientes">
+    <div className="mx-auto max-w-4xl space-y-5">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" asChild className="h-8 w-8 rounded-sm">
+          <Link href="/pacientes" aria-label="Volver a pacientes">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Nuevo Paciente</h2>
-          <p className="text-sm text-slate-500">Complete los datos del paciente</p>
-        </div>
+        <h2 className="text-xl font-bold text-foreground">Nuevo paciente</h2>
       </div>
 
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Personal Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Datos Personales</CardTitle>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
+            <CardTitle className="text-base">Datos personales</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Nombre" required error={errors.firstName?.message}>
@@ -206,10 +201,9 @@ export default function NuevoPacientePage() {
           </CardContent>
         </Card>
 
-        {/* Contact Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Datos de Contacto</CardTitle>
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
+            <CardTitle className="text-base">Contacto</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Teléfono" error={errors.phone?.message}>
@@ -230,10 +224,9 @@ export default function NuevoPacientePage() {
           </CardContent>
         </Card>
 
-        {/* Emergency Contact */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Contacto de Emergencia</CardTitle>
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
+            <CardTitle className="text-base">Contacto de emergencia</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <FormField label="Nombre" error={errors.emergencyContactName?.message}>
@@ -250,10 +243,9 @@ export default function NuevoPacientePage() {
           </CardContent>
         </Card>
 
-        {/* Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Notas Adicionales</CardTitle>
+        <Card className="rounded-none">
+          <CardHeader className="border-b border-border bg-surface-alt pb-4">
+            <CardTitle className="text-base">Notas</CardTitle>
           </CardHeader>
           <CardContent>
             <Textarea
@@ -265,20 +257,22 @@ export default function NuevoPacientePage() {
         </Card>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3">
-          <Button variant="outline" type="button" asChild>
-            <Link href="/pacientes">Cancelar</Link>
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? (
-              <LoadingSpinner />
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Guardar Paciente
-              </>
-            )}
-          </Button>
+        <div className="sticky bottom-0 z-10 -mx-4 border-t border-border bg-surface/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6">
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="outline" type="button" asChild>
+              <Link href="/pacientes">Cancelar</Link>
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Guardar Paciente
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

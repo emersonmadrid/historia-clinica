@@ -24,10 +24,10 @@ ToastViewport.displayName = ToastPrimitive.Viewport.displayName
 type ToastVariant = 'default' | 'success' | 'error' | 'info'
 
 const variantStyles: Record<ToastVariant, string> = {
-  default: 'bg-white border-slate-200 text-slate-900',
-  success: 'bg-white border-green-200 text-slate-900',
-  error: 'bg-white border-red-200 text-slate-900',
-  info: 'bg-white border-sky-200 text-slate-900',
+  default: 'bg-surface border-border text-foreground',
+  success: 'bg-surface border-green-200 text-foreground',
+  error: 'bg-surface border-red-200 text-foreground',
+  info: 'bg-surface border-sky-200 text-foreground',
 }
 
 const variantIcons: Record<ToastVariant, React.ReactNode> = {
@@ -64,12 +64,12 @@ const Toast = React.forwardRef<React.ElementRef<typeof ToastPrimitive.Root>, Toa
           </ToastPrimitive.Title>
         )}
         {description && (
-          <ToastPrimitive.Description className="mt-0.5 text-sm text-slate-500 leading-snug">
+          <ToastPrimitive.Description className="mt-0.5 text-sm text-foreground-muted leading-snug">
             {description}
           </ToastPrimitive.Description>
         )}
       </div>
-      <ToastPrimitive.Close className="shrink-0 rounded p-0.5 text-slate-400 hover:text-slate-700 transition-colors">
+      <ToastPrimitive.Close className="shrink-0 rounded p-0.5 text-foreground-subtle hover:text-foreground transition-colors">
         <X className="h-4 w-4" />
       </ToastPrimitive.Close>
     </ToastPrimitive.Root>

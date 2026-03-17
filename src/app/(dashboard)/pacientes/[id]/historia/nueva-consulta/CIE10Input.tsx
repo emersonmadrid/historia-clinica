@@ -123,7 +123,7 @@ export function CIE10Input({
 
         {/* Suggestions dropdown */}
         {open && suggestions.length > 0 && (
-          <div className="absolute z-50 top-full mt-1 left-0 right-0 rounded-lg border border-violet-200 bg-white shadow-lg overflow-hidden">
+          <div className="absolute z-50 top-full mt-1 left-0 right-0 rounded-lg border border-violet-200 bg-surface shadow-lg overflow-hidden">
             <div className="px-3 py-1.5 bg-violet-50 border-b border-violet-100 flex items-center gap-1.5">
               <Sparkles className="h-3 w-3 text-violet-500" />
               <span className="text-xs font-medium text-violet-600">Sugerencias IA — solo de apoyo</span>
@@ -133,12 +133,12 @@ export function CIE10Input({
                 key={s.code}
                 type="button"
                 onClick={() => handleSelect(s)}
-                className="w-full text-left px-3 py-2.5 hover:bg-violet-50 transition-colors flex items-center gap-3 border-b border-slate-50 last:border-0"
+                className="w-full text-left px-3 py-2.5 hover:bg-violet-50 transition-colors flex items-center gap-3 border-b border-border-subtle last:border-0"
               >
                 <span className="shrink-0 rounded bg-violet-100 px-1.5 py-0.5 font-mono text-xs font-semibold text-violet-700">
                   {s.code}
                 </span>
-                <span className="text-sm text-slate-700">{s.description}</span>
+                <span className="text-sm text-foreground">{s.description}</span>
               </button>
             ))}
           </div>
