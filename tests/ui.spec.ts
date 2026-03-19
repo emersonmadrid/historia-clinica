@@ -63,18 +63,17 @@ test.describe('Dashboard', () => {
 
   test('KPIs principales visibles', async ({ page }) => {
     await expect(page.locator('h1').filter({ hasText: /Buenos|Buenas/ })).toBeVisible()
-    await expect(page.locator('text=Agenda completa').first()).toBeVisible()
+    await expect(page.locator('text=Agenda de hoy').first()).toBeVisible()
     await page.screenshot({ path: 'tests/screenshots/04-dashboard-kpis.png', fullPage: true })
   })
 
   test('agenda operativa visible', async ({ page }) => {
-    await expect(page.locator('text=Agenda completa').first()).toBeVisible()
+    await expect(page.locator('text=Agenda de hoy').first()).toBeVisible()
     await page.screenshot({ path: 'tests/screenshots/04b-agenda.png', fullPage: true })
   })
 
   test('briefing IA del día visible o en carga', async ({ page }) => {
-    // El briefing IA fue removido del dashboard — verificamos que la agenda esté visible
-    await expect(page.locator('text=Agenda completa').first()).toBeVisible()
+    await expect(page.locator('text=Agenda de hoy').first()).toBeVisible()
     await page.screenshot({ path: 'tests/screenshots/04c-daily-briefing.png', fullPage: true })
   })
 
@@ -180,8 +179,7 @@ test.describe('Perfil de Paciente', () => {
 
   test('tabs visibles: Resumen, Consultas, Antecedentes, Documentos, Perfil', async ({ page }) => {
     await goToPatient(page)
-    // New tabs: Historia clínica, Tendencias, Antecedentes, Documentos, Perfil
-    await expect(page.locator('[role="tab"]:has-text("Historia clínica")')).toBeVisible()
+    await expect(page.locator('[role="tab"]:has-text("Resumen")')).toBeVisible()
     await expect(page.locator('[role="tab"]:has-text("Antecedentes")')).toBeVisible()
     await expect(page.locator('[role="tab"]:has-text("Documentos")')).toBeVisible()
     await expect(page.locator('[role="tab"]:has-text("Perfil")')).toBeVisible()
@@ -189,8 +187,7 @@ test.describe('Perfil de Paciente', () => {
 
   test('tab Resumen activo por defecto', async ({ page }) => {
     await goToPatient(page)
-    // Default tab is now "Historia clínica"
-    const tab = page.locator('[role="tab"]:has-text("Historia clínica")')
+    const tab = page.locator('[role="tab"]:has-text("Resumen")')
     await expect(tab).toHaveAttribute('data-state', 'active')
     await page.screenshot({ path: 'tests/screenshots/11-perfil-resumen.png', fullPage: true })
   })
@@ -231,7 +228,7 @@ test.describe('Perfil de Paciente', () => {
   test('tab Perfil muestra información personal', async ({ page }) => {
     await goToPatient(page)
     await page.locator('[role="tab"]:has-text("Perfil")').click()
-    await expect(page.locator('text=Identidad')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('text=Datos personales').or(page.locator('text=Perfil del paciente')).first()).toBeVisible({ timeout: 5000 })
     await page.screenshot({ path: 'tests/screenshots/16-tab-perfil.png', fullPage: true })
   })
 
@@ -275,11 +272,9 @@ test.describe('Nueva Consulta', () => {
   })
 
   test('formulario carga con secciones principales', async ({ page }) => {
-    // Step 1: Motivo + Vitales visible on load
-    await expect(page.locator('h3:has-text("Motivo de consulta")').first()).toBeVisible()
+    await expect(page.locator('input[name="reason"]')).toBeVisible()
     await expect(page.locator('text=Signos vitales').first()).toBeVisible()
-    // Step indicator shows all 4 steps
-    await expect(page.locator('text=SOAP').first()).toBeVisible()
+    await expect(page.locator('text=Contexto del paciente').first()).toBeVisible()
     await page.screenshot({ path: 'tests/screenshots/19-nueva-consulta.png', fullPage: true })
   })
 
@@ -336,17 +331,13 @@ test.describe('Nueva Consulta', () => {
   })
 
   test('IMC se calcula automáticamente al ingresar peso y talla', async ({ page }) => {
-    // Abrir signos adicionales
-    await page.locator('summary').first().click()
-    // Campo IMC visible una vez abierto el panel
-    await expect(page.locator('label:has-text("IMC"), [class*="FormField"] >> text=IMC').first()).toBeVisible()
+    // Los signos vitales están siempre visibles en el panel derecho
     await page.fill('input[name="weight"]', '70')
     await page.fill('input[name="height"]', '170')
     await page.waitForTimeout(500)
-    // IMC = 70 / (1.70^2) ≈ 24.2 — verificar que el campo ya no muestra "Auto"
-    const imcField = page.locator('text=/\\d+\\.\\d+ kg\\/m|Auto/')
-    const visible = await imcField.isVisible().catch(() => false)
-    expect(visible).toBe(true)
+    // IMC = 70 / (1.70^2) ≈ 24.2 — debe aparecer el chip de IMC
+    const imcChip = page.locator('text=/\\d+\\.\\d+ kg\\/m²/')
+    await expect(imcChip.first()).toBeVisible({ timeout: 3000 })
     await page.screenshot({ path: 'tests/screenshots/24-imc-calc.png', fullPage: true })
   })
 
@@ -373,14 +364,14 @@ test.describe('Nueva Consulta', () => {
     await page.fill('textarea[name="assessment"]', 'Hipertensión arterial esencial (I10) no controlada. Probable descompensación por estrés. Sin compromiso de órgano blanco.')
     await page.fill('textarea[name="plan"]', '1. Ajuste de Enalapril a 10mg/día\n2. Control de PA en domicilio diario\n3. Restricción de sodio < 2g/día\n4. Actividad física moderada 30 min/día\n5. Control en 4 semanas')
 
-    // 4. Agregar diagnóstico CIE-10 manualmente
+    // 4. Agregar diagnóstico CIE-10 manualmente (panel derecho)
     await page.getByRole('button', { name: /Agregar/i }).first().click()
-    // Llenar código y descripción directamente
+    // Llenar código y descripción directamente usando name= para ser precisos
     await page.locator('input[placeholder="J00"]').fill('I10')
-    await page.locator('input[placeholder*="diagnóstico"]').fill('Hipertensión arterial esencial')
+    await page.locator('input[name="diagnoses.0.description"]').fill('Hipertensión arterial esencial')
 
-    // 5. Agregar receta
-    await page.getByRole('button', { name: /Agregar receta/i }).click()
+    // 5. Agregar receta — usar "Receta rápida" del toolbar del Plan
+    await page.getByRole('button', { name: /Receta rápida/i }).click()
     await page.locator('input[placeholder="Amoxicilina"]').fill('Enalapril')
     await page.locator('input[placeholder="500mg"]').fill('10mg')
     await page.locator('input[placeholder="Cada 8h"]').fill('1 vez al día')
@@ -389,10 +380,7 @@ test.describe('Nueva Consulta', () => {
 
     await page.screenshot({ path: 'tests/screenshots/25a-atencion-completa.png', fullPage: true })
 
-    // 6. Notas adicionales
-    await page.fill('textarea[name="notes"]', 'Paciente orientado respecto a factores de riesgo cardiovascular. Se entrega hoja de indicaciones.')
-
-    // 7. Guardar consulta
+    // 6. Guardar consulta
     await page.locator('button[type="submit"]').last().click()
 
     // 8. Debe redirigir al perfil del paciente
@@ -418,14 +406,14 @@ test.describe('Nueva Consulta', () => {
     const record = await res.json()
     expect(record).toHaveProperty('id')
 
-    // Ir al perfil del paciente → tab Consultas
+    // Ir al perfil → tab Historia donde está la ConsultasTimeline
     await page.goto(`${BASE}/pacientes/${patientId}`)
     await page.waitForLoadState('networkidle')
-    await page.locator('button[role="tab"]:has-text("Consultas"), [data-state] >> text=Consultas').first().click()
+    await page.locator('[role="tab"]:has-text("Historia")').click()
     await page.waitForTimeout(500)
 
-    // La consulta reciente debe aparecer en el historial
-    await expect(page.locator('text=Prueba de historial automatizado').or(page.locator('text=historial')).first()).toBeVisible({ timeout: 8000 })
+    // La consulta reciente debe aparecer en la timeline
+    await expect(page.locator('text=Prueba de historial automatizado').first()).toBeVisible({ timeout: 8000 })
     await page.screenshot({ path: 'tests/screenshots/25c-historial-consultas.png', fullPage: true })
   })
 
@@ -506,8 +494,8 @@ test.describe('Citas', () => {
   })
 
   test('calendario mensual visible', async ({ page }) => {
-    // El texto del mes usa locale es (lowercase) con CSS capitalize
-    await expect(page.locator('text=/enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre/i')).toBeVisible()
+    // El texto "marzo 2026" está en un <span> con capitalize — usar selector más específico
+    await expect(page.locator('span.capitalize').filter({ hasText: /enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre/i }).first()).toBeVisible()
     await page.screenshot({ path: 'tests/screenshots/25-citas-calendario.png', fullPage: true })
   })
 
