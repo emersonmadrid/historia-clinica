@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay, isToday, addMonths, subMonths } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -33,6 +34,7 @@ type Appointment = Prisma.AppointmentGetPayload<{
 }>
 
 export default function CitasPage() {
+  const router = useRouter()
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
@@ -326,25 +328,18 @@ export default function CitasPage() {
                     {/* Actions — only for pending */}
                     {isPending && (
                       <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-                        <Button size="sm" asChild className="h-7 gap-1 px-2.5 text-xs">
-                          <Link href={`/pacientes/${apt.patient.id}/historia/nueva-consulta?citaId=${apt.id}`}>
-                            <Stethoscope className="h-3 w-3" />
-                            Atender
-                          </Link>
+                        <Button
+                          size="sm"
+                          className="h-7 gap-1 px-2.5 text-xs"
+                          disabled={loadingId === apt.id}
+                          onClick={async () => {
+                            if (!arrived) await handleArrive(apt.id)
+                            router.push(`/pacientes/${apt.patient.id}/historia/nueva-consulta?citaId=${apt.id}`)
+                          }}
+                        >
+                          <Stethoscope className="h-3 w-3" />
+                          Atender
                         </Button>
-
-                        {!arrived && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 px-2.5 text-xs"
-                            disabled={loadingId === apt.id}
-                            onClick={() => handleArrive(apt.id)}
-                          >
-                            <CheckCircle2 className="h-3 w-3" />
-                            Llegó
-                          </Button>
-                        )}
 
                         {apt.patient.phone && (
                           <a

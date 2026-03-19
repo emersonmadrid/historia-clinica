@@ -152,7 +152,8 @@ export function AgendaList({
 
             {/* Actions */}
             <div className="flex shrink-0 items-center gap-2">
-              {canAct && canMarkArrival && !arrived && (
+              {/* Check-in solo para recepcionistas (no pueden atender) */}
+              {canAct && canMarkArrival && !canAttend && !arrived && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -167,13 +168,15 @@ export function AgendaList({
                 <Button
                   variant={isNext ? 'default' : 'outline'}
                   size="sm"
-                  asChild
+                  disabled={loadingArrive === apt.id}
                   className="h-8 px-3 text-xs"
+                  onClick={async () => {
+                    if (!arrived) await handleArrive(apt.id)
+                    router.push(`/pacientes/${apt.patient.id}/historia/nueva-consulta?citaId=${apt.id}`)
+                  }}
                 >
-                  <Link href={`/pacientes/${apt.patient.id}/historia/nueva-consulta?citaId=${apt.id}`}>
-                    <Stethoscope className="mr-1.5 h-3.5 w-3.5" />
-                    Atender
-                  </Link>
+                  <Stethoscope className="mr-1.5 h-3.5 w-3.5" />
+                  Atender
                 </Button>
               )}
               {apt.patient.phone && !isDone && (

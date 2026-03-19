@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, use } from 'react'
 import { useSession } from 'next-auth/react'
-import { useForm, useFieldArray, Controller, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form'
+import { useForm, useFieldArray, useWatch, Controller, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -805,16 +805,6 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
               })}
             </div>
 
-            {/* Bottom action bar */}
-            <div className="shrink-0 flex items-center justify-between border-t border-border bg-surface px-4 py-3">
-              <Button variant="ghost" type="button" asChild className="text-[var(--foreground-subtle)]">
-                <Link href={`/pacientes/${patientId}`}>Cancelar</Link>
-              </Button>
-              <Button type="submit" disabled={isLoading} className="gap-2">
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                {isLoading ? 'Guardando...' : 'Guardar consulta'}
-              </Button>
-            </div>
           </div>
 
           {/* ── RIGHT: Structured data panel ── */}
@@ -1037,7 +1027,7 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
                   {rxFields.length === 0
                     ? <p className="py-2 text-center text-xs text-foreground-subtle">Sin recetas</p>
                     : rxFields.map((rxField, rxIndex) => (
-                      <RxBlock key={rxField.id} rxIndex={rxIndex} control={control} register={register} errors={errors} removeRx={removeRx} watch={watch} checkDrugInteraction={checkDrugInteraction} />
+                      <RxBlock key={rxField.id} rxIndex={rxIndex} control={control} register={register} errors={errors} removeRx={removeRx} checkDrugInteraction={checkDrugInteraction} />
                     ))
                   }
                 </div>
@@ -1120,10 +1110,20 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
 
 // ── RxBlock sub-component ─────────────────────────────────────────────────────
 
-function RxBlock({ rxIndex, control, register, errors, removeRx, watch, checkDrugInteraction }: {
+function RxItemInteractionAlert({ control, rxIndex, itemIndex, checkDrugInteraction }: {
+  control: Control<FormData>; rxIndex: number; itemIndex: number
+  checkDrugInteraction: (name: string) => string | null
+}) {
+  const med = useWatch({ control, name: `prescriptions.${rxIndex}.items.${itemIndex}.medication`, defaultValue: '' })
+  const warning = checkDrugInteraction(med ?? '')
+  if (!warning) return null
+  return <p className="flex items-center gap-1 text-xs text-warning"><ShieldAlert className="h-3 w-3 shrink-0" />{warning}</p>
+}
+
+function RxBlock({ rxIndex, control, register, errors, removeRx, checkDrugInteraction }: {
   rxIndex: number; control: Control<FormData>; register: UseFormRegister<FormData>
   errors: FieldErrors<FormData>; removeRx: (index: number) => void
-  watch: (name: string) => string | undefined; checkDrugInteraction: (name: string) => string | null
+  checkDrugInteraction: (name: string) => string | null
 }) {
   const { fields: itemFields, append: appendItem, remove: removeItem } = useFieldArray({ control, name: `prescriptions.${rxIndex}.items` })
 
@@ -1156,10 +1156,7 @@ function RxBlock({ rxIndex, control, register, errors, removeRx, watch, checkDru
                 {errors.prescriptions?.[rxIndex]?.items?.[itemIndex]?.medication && (
                   <p className="text-xs text-danger">{errors.prescriptions[rxIndex].items[itemIndex].medication.message}</p>
                 )}
-                {(() => {
-                  const w = checkDrugInteraction(watch(`prescriptions.${rxIndex}.items.${itemIndex}.medication`) ?? '')
-                  return w ? <p className="flex items-center gap-1 text-xs text-warning"><ShieldAlert className="h-3 w-3 shrink-0" />{w}</p> : null
-                })()}
+                <RxItemInteractionAlert control={control} rxIndex={rxIndex} itemIndex={itemIndex} checkDrugInteraction={checkDrugInteraction} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Dosis *</Label>
