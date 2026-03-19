@@ -700,56 +700,6 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
                   {errors.reason?.message && <p className="text-xs text-danger">{errors.reason.message}</p>}
                 </div>
               </div>
-              {/* AI clinical guide */}
-              {(guideLoading || clinicalGuide) && (
-                <div className="rounded-md border border-primary/20 bg-primary/5 overflow-hidden">
-                  <button type="button" onClick={() => setGuideCollapsed(v => !v)}
-                    className="flex w-full items-center gap-2 px-3 py-2 hover:bg-primary/10 transition-colors">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    <p className="flex-1 text-left text-xs font-semibold uppercase tracking-wide text-primary">Guía clínica IA</p>
-                    {guideLoading ? <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                      : <ChevronDown className={`h-3.5 w-3.5 text-primary transition-transform ${guideCollapsed ? '-rotate-90' : ''}`} />}
-                  </button>
-                  {!guideCollapsed && (
-                    <>
-                      {guideLoading && (
-                        <div className="grid grid-cols-2 gap-px border-t border-primary/10 sm:grid-cols-4">
-                          {Object.values(specialtyConfig.guideLabels).map(label => (
-                            <div key={label} className="bg-surface px-3 py-2">
-                              <p className="mb-1.5 text-xs font-semibold uppercase text-foreground-subtle">{label}</p>
-                              {[1,2,3].map(i => <div key={i} className="mb-1 h-2 animate-pulse rounded bg-border" style={{ width: `${55 + i * 15}%` }} />)}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {clinicalGuide && !guideLoading && (
-                        <div className="grid grid-cols-2 gap-px border-t border-primary/10 sm:grid-cols-4">
-                          {[
-                            { label: specialtyConfig.guideLabels.ask,     icon: MessageSquare, items: clinicalGuide.ask },
-                            { label: specialtyConfig.guideLabels.examine,  icon: Stethoscope,   items: clinicalGuide.examine },
-                            { label: specialtyConfig.guideLabels.consider, icon: Brain,         items: clinicalGuide.consider },
-                            { label: specialtyConfig.guideLabels.workup,   icon: FlaskConical,  items: clinicalGuide.workup },
-                          ].map(({ label, icon: Icon, items }) => (
-                            <div key={label} className="bg-surface px-3 py-2">
-                              <div className="mb-1.5 flex items-center gap-1.5">
-                                <Icon className="h-3 w-3 text-primary" />
-                                <p className="text-xs font-semibold uppercase text-foreground-subtle">{label}</p>
-                              </div>
-                              <ul className="space-y-1">
-                                {items.map((item, i) => (
-                                  <li key={i} className="flex items-start gap-1.5 text-xs text-foreground-muted">
-                                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/40" />{item}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* SOAP 2×2 grid — fills remaining height */}
@@ -809,6 +759,60 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
 
           {/* ── RIGHT: Structured data panel ── */}
           <aside className="hidden lg:flex w-[300px] shrink-0 flex-col overflow-y-auto divide-y divide-border bg-surface">
+
+            {/* Guía clínica IA */}
+            {(guideLoading || clinicalGuide) && (
+              <div>
+                <button type="button" onClick={() => setGuideCollapsed(v => !v)}
+                  className="flex w-full items-center justify-between bg-surface-alt px-4 py-2 border-b border-border hover:bg-surface-muted transition-colors">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    <h3 className="section-kicker text-primary">Guía clínica IA</h3>
+                  </div>
+                  {guideLoading
+                    ? <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                    : <ChevronDown className={`h-3.5 w-3.5 text-primary transition-transform ${guideCollapsed ? '-rotate-90' : ''}`} />}
+                </button>
+                {!guideCollapsed && (
+                  <div className="p-3 space-y-3">
+                    {guideLoading && (
+                      <div className="space-y-2">
+                        {Object.values(specialtyConfig.guideLabels).map(label => (
+                          <div key={label}>
+                            <p className="mb-1 text-xs font-semibold uppercase text-foreground-subtle">{label}</p>
+                            {[1,2,3].map(i => <div key={i} className="mb-1 h-2 animate-pulse rounded bg-border" style={{ width: `${55 + i * 15}%` }} />)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {clinicalGuide && !guideLoading && (
+                      <div className="space-y-3">
+                        {[
+                          { label: specialtyConfig.guideLabels.ask,     icon: MessageSquare, items: clinicalGuide.ask },
+                          { label: specialtyConfig.guideLabels.examine,  icon: Stethoscope,   items: clinicalGuide.examine },
+                          { label: specialtyConfig.guideLabels.consider, icon: Brain,         items: clinicalGuide.consider },
+                          { label: specialtyConfig.guideLabels.workup,   icon: FlaskConical,  items: clinicalGuide.workup },
+                        ].filter(s => s.items.length > 0).map(({ label, icon: Icon, items }) => (
+                          <div key={label}>
+                            <div className="mb-1 flex items-center gap-1.5">
+                              <Icon className="h-3 w-3 text-primary" />
+                              <p className="text-xs font-semibold uppercase text-foreground-subtle">{label}</p>
+                            </div>
+                            <ul className="space-y-1">
+                              {items.map((item, i) => (
+                                <li key={i} className="flex items-start gap-1.5 text-xs text-foreground-muted">
+                                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/40" />{item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Signos vitales */}
             {specialtyConfig.vitals && (
