@@ -757,21 +757,27 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
 
             {/* Motivo header */}
             <div className="shrink-0 border-b border-border bg-surface p-4 space-y-3">
-              <Field label="Motivo de consulta *" error={errors.reason?.message}>
-                <Input className="text-sm" placeholder="¿Por qué consulta el paciente hoy?" {...register('reason')} autoFocus />
-              </Field>
-              {specialtyConfig.sessionTypes && (
-                <Field label="Tipo de sesión">
-                  <Select value={sessionType} onValueChange={setSessionType}>
-                    <SelectTrigger className="text-sm max-w-xs"><SelectValue placeholder="Seleccionar tipo..." /></SelectTrigger>
-                    <SelectContent>
-                      {specialtyConfig.sessionTypes.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
+              <div className="flex items-end gap-2">
+                <div className="flex-1 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Motivo de consulta *</Label>
+                    {specialtyConfig.sessionTypes && (
+                      <Select value={sessionType} onValueChange={setSessionType}>
+                        <SelectTrigger className="h-6 w-auto gap-1 border-0 bg-transparent px-2 text-xs text-foreground-subtle shadow-none hover:bg-surface-muted focus:ring-0">
+                          <SelectValue placeholder="Tipo de sesión" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {specialtyConfig.sessionTypes.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <Input className="text-sm" placeholder="¿Por qué consulta el paciente hoy?" {...register('reason')} autoFocus />
+                  {errors.reason?.message && <p className="text-xs text-danger">{errors.reason.message}</p>}
+                </div>
+              </div>
               {/* AI clinical guide */}
               {(guideLoading || clinicalGuide) && (
                 <div className="rounded-md border border-primary/20 bg-primary/5 overflow-hidden">
@@ -1120,70 +1126,70 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
               </div>
             )}
 
-            {/* Derivar paciente */}
+            {/* Derivar paciente — se activa desde el toolbar del Plan */}
+            {showReferral && (
             <div>
-              <button type="button" onClick={() => setShowReferral(v => !v)}
-                className="flex w-full items-center justify-between bg-surface-alt px-4 py-2 border-b border-border hover:bg-surface-muted transition-colors">
+              <div className="flex items-center justify-between bg-surface-alt px-4 py-2 border-b border-border">
                 <div className="flex items-center gap-2">
                   <Share2 className="h-3.5 w-3.5 text-foreground-subtle" />
                   <h3 className="section-kicker">Derivar paciente</h3>
-                  {showReferral && referralSpecialty && (
+                  {referralSpecialty && (
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{SPECIALTY_LABELS[referralSpecialty] ?? referralSpecialty}</span>
                   )}
                 </div>
-                <span className="text-xs text-foreground-subtle">{showReferral ? '▲' : '+'}</span>
-              </button>
-              {showReferral && (
-                <div className="space-y-2 p-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Especialidad *</Label>
-                      <Select value={referralSpecialty} onValueChange={setReferralSpecialty}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(SPECIALTY_LABELS).map(([val, label]) => (
-                            <SelectItem key={val} value={val}>{label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Urgencia</Label>
-                      <Select value={referralUrgency} onValueChange={setReferralUrgency}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ROUTINE">Rutina</SelectItem>
-                          <SelectItem value="PRIORITY">Prioritario</SelectItem>
-                          <SelectItem value="URGENT">Urgente</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                <button type="button" onClick={() => setShowReferral(false)}
+                  className="text-foreground-subtle hover:text-foreground transition-colors text-xs px-1">✕</button>
+              </div>
+              <div className="space-y-2 p-3">
+                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label className="text-xs">Médico destino (opcional)</Label>
-                    <Select value={referralDoctorId || '__none__'} onValueChange={v => setReferralDoctorId(v === '__none__' ? '' : v)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Sin especificar" /></SelectTrigger>
+                    <Label className="text-xs">Especialidad *</Label>
+                    <Select value={referralSpecialty} onValueChange={setReferralSpecialty}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">Sin especificar</SelectItem>
-                        {orgDoctors.filter(d => d.id !== session?.user?.id).map(d => (
-                          <SelectItem key={d.id} value={d.id}>{d.name}{d.speciality ? ` · ${d.speciality}` : ''}</SelectItem>
+                        {Object.entries(SPECIALTY_LABELS).map(([val, label]) => (
+                          <SelectItem key={val} value={val}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Motivo *</Label>
-                    <Textarea placeholder="Motivo clínico..." rows={2} className="resize-none text-xs"
-                      value={referralReason} onChange={e => setReferralReason(e.target.value)} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-foreground-subtle">Notas (opcional)</Label>
-                    <Textarea placeholder="Para el especialista..." rows={2} className="resize-none text-xs"
-                      value={referralNotes} onChange={e => setReferralNotes(e.target.value)} />
+                    <Label className="text-xs">Urgencia</Label>
+                    <Select value={referralUrgency} onValueChange={setReferralUrgency}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ROUTINE">Rutina</SelectItem>
+                        <SelectItem value="PRIORITY">Prioritario</SelectItem>
+                        <SelectItem value="URGENT">Urgente</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              )}
+                <div className="space-y-1">
+                  <Label className="text-xs">Médico destino (opcional)</Label>
+                  <Select value={referralDoctorId || '__none__'} onValueChange={v => setReferralDoctorId(v === '__none__' ? '' : v)}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Sin especificar" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Sin especificar</SelectItem>
+                      {orgDoctors.filter(d => d.id !== session?.user?.id).map(d => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}{d.speciality ? ` · ${d.speciality}` : ''}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Motivo *</Label>
+                  <Textarea placeholder="Motivo clínico..." rows={2} className="resize-none text-xs"
+                    value={referralReason} onChange={e => setReferralReason(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-foreground-subtle">Notas (opcional)</Label>
+                  <Textarea placeholder="Para el especialista..." rows={2} className="resize-none text-xs"
+                    value={referralNotes} onChange={e => setReferralNotes(e.target.value)} />
+                </div>
+              </div>
             </div>
+            )}
 
           </aside>
 
