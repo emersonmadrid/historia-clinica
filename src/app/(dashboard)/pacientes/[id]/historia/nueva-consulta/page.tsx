@@ -10,7 +10,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Plus, Trash2, Save, Pill, ShieldAlert, Sparkles, Loader2,
   Calendar, MessageSquare, Stethoscope, Brain, FlaskConical, FileText,
-  Clock, Activity, Heart, Thermometer, Wind, Droplets, Share2, ChevronDown, Search,
+  Clock, Activity, Heart, Thermometer, Wind, Droplets, Share2, ChevronDown,
 } from 'lucide-react'
 import { getSpecialtyConfig } from '@/lib/specialtyConfig'
 import { CIE10Input } from './CIE10Input'
@@ -275,84 +275,6 @@ function PatientSidebar({ ctx, loading }: { ctx: PatientContext | null; loading:
         <div className="px-4 py-3">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-foreground-subtle">Última consulta</p>
           <p className="leading-snug text-foreground-muted">{ctx.lastVisit.reason}</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── InlineDxSearch ─────────────────────────────────────────────────────────────
-
-function InlineDxSearch({ onSelect }: { onSelect: (code: string, description: string) => void }) {
-  const [query, setQuery]           = useState('')
-  const [results, setResults]       = useState<{ code: string; description: string }[]>([])
-  const [loading, setLoading]       = useState(false)
-  const [open, setOpen]             = useState(false)
-  const debounceRef                 = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const containerRef                = useRef<HTMLDivElement>(null)
-
-  const search = async (text: string) => {
-    if (text.trim().length < 3) { setResults([]); setOpen(false); return }
-    setLoading(true)
-    try {
-      const res = await fetch('/api/cie10', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
-      const data = await res.json()
-      if (Array.isArray(data) && data.length > 0) { setResults(data); setOpen(true) }
-      else { setResults([]); setOpen(false) }
-    } catch { setResults([]) }
-    finally { setLoading(false) }
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => search(e.target.value), 600)
-  }
-
-  const handleSelect = (r: { code: string; description: string }) => {
-    onSelect(r.code, r.description)
-    setQuery(''); setResults([]); setOpen(false)
-  }
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  return (
-    <div ref={containerRef} className="relative shrink-0 border-t border-border bg-surface-alt px-3 py-2">
-      <div className="flex items-center gap-1.5">
-        {loading
-          ? <Loader2 className="h-3 w-3 shrink-0 animate-spin text-primary" />
-          : <Search className="h-3 w-3 shrink-0 text-foreground-subtle" />}
-        <input
-          type="text"
-          value={query}
-          onChange={handleChange}
-          placeholder="Buscar diagnóstico CIE-10..."
-          className="flex-1 bg-transparent text-xs text-foreground placeholder:text-foreground-subtle/50 focus:outline-none"
-        />
-      </div>
-      {open && results.length > 0 && (
-        <div className="absolute bottom-full left-0 right-0 z-50 mb-1 border border-border bg-surface shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-          <div className="flex items-center gap-1.5 border-b border-border-subtle bg-primary-subtle px-3 py-1.5">
-            <Sparkles className="h-3 w-3 text-primary" />
-            <span className="text-xs font-medium text-primary">Sugerencias IA</span>
-          </div>
-          {results.map(r => (
-            <button
-              key={r.code}
-              type="button"
-              onClick={() => handleSelect(r)}
-              className="w-full text-left flex items-start gap-2 px-3 py-2 hover:bg-primary-subtle transition-colors border-b border-border-subtle last:border-0"
-            >
-              <span className="shrink-0 mt-0.5 bg-primary-subtle px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary">{r.code}</span>
-              <span className="text-xs text-foreground leading-snug">{r.description}</span>
-            </button>
-          ))}
         </div>
       )}
     </div>
@@ -878,10 +800,6 @@ export default function NuevaConsultaPage({ params }: { params: Promise<{ id: st
                       className="flex-1 min-h-0 w-full resize-none bg-transparent p-3 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)]/40 focus:outline-none"
                       {...register(key)}
                     />
-                    {/* Assessment: inline CIE-10 quick-add */}
-                    {key === 'assessment' && (
-                      <InlineDxSearch onSelect={(code, desc) => appendDiagnosis({ code, description: desc, type: 'PRIMARY', status: 'ACTIVE', notes: '' })} />
-                    )}
                   </div>
                 )
               })}
