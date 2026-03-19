@@ -432,8 +432,14 @@ export default function EditarConsultaPage({
                               codeField.onChange(code)
                               descField.onChange(description)
                             }}
-                            codeProps={{ ...codeField, onChange: codeField.onChange as any }}
-                            descriptionProps={{ ...descField, onChange: descField.onChange as any }}
+                            codeProps={{
+                              ...codeField,
+                              onChange: (event) => codeField.onChange(event.target.value),
+                            }}
+                            descriptionProps={{
+                              ...descField,
+                              onChange: (event) => descField.onChange(event.target.value),
+                            }}
                             codeError={errors.diagnoses?.[index]?.code?.message}
                             descriptionError={errors.diagnoses?.[index]?.description?.message}
                           />

@@ -81,6 +81,61 @@ enum AppointmentStatus {
   NO_SHOW
 }
 
+enum Specialty {
+  GENERAL_MEDICINE
+  PSYCHOLOGY
+  PSYCHIATRY
+  NUTRITION
+  PHYSIOTHERAPY
+  OTHER
+}
+
+enum NoteTemplate {
+  SOAP
+  PSYCHOLOGY
+  NUTRITION
+  PHYSIOTHERAPY
+}
+
+enum ReferralUrgency {
+  ROUTINE
+  PRIORITY
+  URGENT
+}
+
+enum ReferralStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AuditAction {
+  PATIENT_CREATED
+  PATIENT_UPDATED
+  PATIENT_ARCHIVED
+  PATIENT_EXPORTED
+  DOCUMENT_UPLOADED
+  DOCUMENT_DELETED
+  DOCUMENT_DOWNLOADED
+  APPOINTMENT_CREATED
+  APPOINTMENT_UPDATED
+  APPOINTMENT_STATUS_CHANGED
+  APPOINTMENT_RSVP
+  CONSULTATION_CREATED
+  CONSULTATION_UPDATED
+  PRESCRIPTION_CREATED
+  PRESCRIPTION_DELETED
+  PRESCRIPTION_EXPORTED
+  REFERRAL_CREATED
+  REFERRAL_UPDATED
+  USER_CREATED
+  USER_UPDATED
+  ORGANIZATION_UPDATED
+  LOGIN_SUCCEEDED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -93,6 +148,7 @@ model Organization {
 
   users    User[]
   patients Patient[]
+  auditLogs AuditLog[]
 
   @@map("organizations")
 }
@@ -104,6 +160,7 @@ model User {
   password    String
   role        Role     @default(DOCTOR)
   speciality  String?
+  specialty   Specialty @default(GENERAL_MEDICINE)
   avatar      String?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -122,6 +179,9 @@ model User {
   appointments      Appointment[]
   uploadedDocuments PatientDocument[]
   prescriptions     Prescription[]
+  auditLogs         AuditLog[]
+  referralsSent     Referral[]        @relation("ReferralFrom")
+  referralsReceived Referral[]        @relation("ReferralTo")
 
   @@map("users")
 }
@@ -161,6 +221,7 @@ model Patient {
   medicalBackgrounds MedicalBackground[]
   documents          PatientDocument[]
   prescriptions      Prescription[]
+  referrals          Referral[]
 
   @@map("patients")
 }
@@ -192,15 +253,17 @@ model ClinicalRecord {
   objective   String?  @db.Text
   assessment  String?  @db.Text
   plan        String?  @db.Text
-  notes       String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  notes        String?      @db.Text
+  noteTemplate NoteTemplate @default(SOAP)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   patient       Patient        @relation(fields: [patientId], references: [id])
   doctor        User           @relation(fields: [doctorId], references: [id])
   vitalSigns    VitalSigns?
   diagnoses     Diagnosis[]
   prescriptions Prescription[]
+  referrals     Referral[]
 
   @@map("clinical_records")
 }
@@ -324,4 +387,50 @@ model Appointment {
   doctor  User    @relation(fields: [doctorId], references: [id])
 
   @@map("appointments")
+}
+
+model Referral {
+  id             String          @id @default(cuid())
+  patientId      String
+  fromDoctorId   String
+  toDoctorId     String?
+  toSpecialty    Specialty
+  reason         String          @db.Text
+  urgency        ReferralUrgency @default(ROUTINE)
+  status         ReferralStatus  @default(PENDING)
+  notes          String?         @db.Text
+  consultationId String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  patient      Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  fromDoctor   User            @relation("ReferralFrom", fields: [fromDoctorId], references: [id])
+  toDoctor     User?           @relation("ReferralTo", fields: [toDoctorId], references: [id])
+  consultation ClinicalRecord? @relation(fields: [consultationId], references: [id], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([fromDoctorId, status])
+  @@index([toDoctorId, status])
+  @@map("referrals")
+}
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  organizationId String
+  actorUserId    String?
+  action         AuditAction
+  entityType     String
+  entityId       String?
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json?
+  createdAt      DateTime    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actorUser     User?        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
 }

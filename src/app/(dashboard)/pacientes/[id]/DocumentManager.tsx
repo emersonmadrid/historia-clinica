@@ -149,7 +149,7 @@ export function DocumentManager({ patientId, documents }: DocumentManagerProps) 
       {documents.length === 0 ? (
         <div
           className={`border-2 border-dashed p-10 text-center transition-colors ${
-            dragOver ? 'border-primary bg-sky-50' : 'border-border'
+            dragOver ? 'border-primary bg-[var(--primary-subtle)]' : 'border-border'
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
@@ -188,7 +188,7 @@ export function DocumentManager({ patientId, documents }: DocumentManagerProps) 
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <Button variant="ghost" size="icon" asChild title="Descargar">
-                  <a href={doc.fileUrl} download={doc.name} target="_blank" rel="noopener noreferrer">
+                  <a href={`/api/pacientes/${patientId}/documentos/${doc.id}/file`} download={doc.name}>
                     <Download className="h-4 w-4 text-foreground-muted" />
                   </a>
                 </Button>

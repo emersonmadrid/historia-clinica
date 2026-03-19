@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getActorContext } from '@/lib/authz'
+import { handleApiError } from '@/lib/errors'
 
 export async function GET() {
   try {
@@ -8,6 +10,7 @@ export async function GET() {
     if (!session?.user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
+    const actor = await getActorContext(session)
 
     const now = new Date()
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -16,21 +19,24 @@ export async function GET() {
 
     const [totalPatients, todayAppointments, monthConsultations, pendingAppointments] =
       await Promise.all([
-        prisma.patient.count({ where: { active: true } }),
+        prisma.patient.count({ where: { active: true, organizationId: actor.organizationId } }),
         prisma.appointment.count({
           where: {
             dateTime: { gte: startOfDay, lt: endOfDay },
+            patient: { organizationId: actor.organizationId },
           },
         }),
         prisma.clinicalRecord.count({
           where: {
             date: { gte: startOfMonth },
+            patient: { organizationId: actor.organizationId },
           },
         }),
         prisma.appointment.count({
           where: {
             dateTime: { gte: startOfDay, lt: endOfDay },
             status: { in: ['SCHEDULED', 'CONFIRMED'] },
+            patient: { organizationId: actor.organizationId },
           },
         }),
       ])
@@ -42,7 +48,6 @@ export async function GET() {
       pendingAppointments,
     })
   } catch (error) {
-    console.error('Dashboard error:', error)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    return handleApiError(error)
   }
 }

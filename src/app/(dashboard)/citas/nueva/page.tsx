@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent } from '@/components/ui/card'
 import { FormField } from '@/components/shared/FormField'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import type { Prisma } from '@prisma/client'
@@ -55,6 +54,7 @@ export default function NuevaCitaPage() {
   const [patients, setPatients] = useState<Patient[]>([])
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [loadingDoctors, setLoadingDoctors] = useState(true)
   const [selectedDoctorId, setSelectedDoctorId] = useState('')
   const [doctorSearch, setDoctorSearch] = useState('')
   const [showPatientDropdown, setShowPatientDropdown] = useState(false)
@@ -98,6 +98,7 @@ export default function NuevaCitaPage() {
         }
       })
       .catch(() => {})
+      .finally(() => setLoadingDoctors(false))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Search patients
@@ -164,9 +165,8 @@ export default function NuevaCitaPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <Card className="rounded-none">
-          <CardContent className="p-0">
-            <div className="space-y-4 px-5 py-4">
+        <div className="panel">
+          <div className="space-y-4 px-5 py-5">
               <FormField label="Paciente" required error={errors.patientId?.message}>
                 {selectedPatient ? (
                   <div className="flex items-center gap-2">
@@ -225,7 +225,11 @@ export default function NuevaCitaPage() {
               </FormField>
 
               <FormField label="Doctor" required error={errors.doctorId?.message}>
-                {doctors.length > 0 ? (
+                {loadingDoctors ? (
+                  <div className="flex h-10 w-full animate-pulse items-center border border-border bg-surface px-3">
+                    <div className="h-3 w-40 rounded bg-border" />
+                  </div>
+                ) : doctors.length > 0 ? (
                   <div className="relative">
                     <button
                       type="button"
@@ -293,10 +297,9 @@ export default function NuevaCitaPage() {
                     )}
                   </div>
                 ) : (
-                  <Input
-                    placeholder="ID del doctor"
-                    {...register('doctorId')}
-                  />
+                  <p className="flex h-10 items-center border border-border bg-surface-alt px-3 text-sm text-foreground-muted">
+                    No se encontraron doctores disponibles
+                  </p>
                 )}
               </FormField>
 
@@ -341,9 +344,8 @@ export default function NuevaCitaPage() {
                   />
                 </div>
               </details>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-border pt-2">
           <Button variant="outline" type="button" asChild>

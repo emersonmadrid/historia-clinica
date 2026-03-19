@@ -3,11 +3,14 @@ import { auth } from '@/lib/auth'
 import { assertAuth } from '@/lib/permissions'
 import { handleApiError } from '@/lib/errors'
 import { generateSOAP } from '@/lib/ai'
+import { applyAiRateLimit } from '@/lib/aiRateLimit'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
     assertAuth(session)
+    const limited = applyAiRateLimit(session!.user.id)
+    if (limited) return limited
 
     const body = await request.json()
     const { reason, allergies, activeConditions, currentMedications, vitalSigns } = body

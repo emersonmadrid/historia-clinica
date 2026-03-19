@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 
 const DropdownMenu = DropdownMenuPrimitive.Root
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
-const DropdownMenuPortal = DropdownMenuPrimitive.Portal
 
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
@@ -17,7 +16,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 min-w-[8rem] overflow-hidden rounded-lg border border-border bg-surface p-1 shadow-md animate-in fade-in-0 zoom-in-95',
+        'z-50 min-w-[10rem] overflow-hidden rounded-[var(--radius-xs)] border border-border bg-white/98 p-1.5 shadow-[var(--shadow-elevated)] animate-in fade-in-0 zoom-in-95 backdrop-blur',
         className
       )}
       {...props}
@@ -33,7 +32,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex cursor-pointer select-none items-center gap-2 rounded-md px-2.5 py-2 text-sm text-foreground outline-none transition-colors hover:bg-border-subtle focus:bg-border-subtle data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-pointer select-none items-center gap-2 rounded-[calc(var(--radius-xs)-4px)] px-3 py-2.5 text-sm text-foreground outline-none transition-colors hover:bg-surface-alt focus:bg-surface-alt data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className
     )}
     {...props}

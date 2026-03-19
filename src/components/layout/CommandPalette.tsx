@@ -135,7 +135,7 @@ export function CommandPalette() {
         <div className="flex items-center gap-3 border-b border-border-subtle px-4">
           {loading
             ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
-            : <Search className="h-4 w-4 shrink-0text-foreground-subtle" />
+            : <Search className="h-4 w-4 shrink-0 text-[var(--foreground-subtle)]" />
           }
           <input
             ref={inputRef}
@@ -162,7 +162,7 @@ export function CommandPalette() {
 
             return (
               <div key={group} className="mb-1">
-                <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-foreground-subtle">
+                <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-foreground-subtle">
                   {group}
                 </p>
                 {groupItems.map((item, i) => {
@@ -173,7 +173,7 @@ export function CommandPalette() {
                     <button
                       key={`${item.href}-${item.label}-${i}`}
                       className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all ${
-                        isActive ? 'bg-sky-50' : 'hover:bg-background'
+                        isActive ? 'bg-[var(--primary-subtle)]' : 'hover:bg-background'
                       }`}
                       onClick={() => navigate(item.href)}
                       onMouseEnter={() => setSelectedIndex(idx)}

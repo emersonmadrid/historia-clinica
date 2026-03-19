@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth, assertRole } from '@/lib/permissions'
-import { handleApiError, NotFoundError } from '@/lib/errors'
+import { getActorContext, requireSameOrganization } from '@/lib/authz'
+import { getRequestAuditContext, writeAuditLog } from '@/lib/audit'
+import { handleApiError } from '@/lib/errors'
 import { createPrescriptionSchema } from '@/features/prescriptions/schemas'
 
 export async function GET(
@@ -12,11 +14,12 @@ export async function GET(
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const { id: consultationId } = await params
 
     const prescriptions = await prisma.prescription.findMany({
-      where: { consultationId },
+      where: { consultationId, patient: { organizationId: actor.organizationId } },
       include: {
         items: { orderBy: { createdAt: 'asc' } },
         doctor: { select: { id: true, name: true, speciality: true, licenseNumber: true } },
@@ -38,14 +41,20 @@ export async function POST(
     const session = await auth()
     assertAuth(session)
     assertRole(session, ['DOCTOR', 'ADMIN'])
+    const actor = await getActorContext(session)
 
     const { id: consultationId } = await params
 
     const consultation = await prisma.clinicalRecord.findUnique({
       where: { id: consultationId },
-      select: { id: true, patientId: true },
+      include: { patient: { select: { organizationId: true } } },
     })
-    if (!consultation) throw new NotFoundError('Consulta no encontrada')
+    const scopedConsultation = requireSameOrganization(
+      consultation,
+      actor.organizationId,
+      (item) => item.patient.organizationId,
+      'Consulta no encontrada'
+    )
 
     const body = await request.json()
     const parsed = createPrescriptionSchema.safeParse({ ...body, consultationId })
@@ -60,7 +69,7 @@ export async function POST(
     const prescription = await prisma.prescription.create({
       data: {
         consultationId,
-        patientId: consultation.patientId,
+        patientId: scopedConsultation.patientId,
         doctorId: session!.user.id,
         notes: parsed.data.notes || null,
         items: {
@@ -77,6 +86,19 @@ export async function POST(
       include: {
         items: true,
         doctor: { select: { id: true, name: true, speciality: true, licenseNumber: true } },
+      },
+    })
+
+    await writeAuditLog({
+      organizationId: actor.organizationId,
+      actorUserId: actor.userId,
+      action: 'PRESCRIPTION_CREATED',
+      entityType: 'prescription',
+      entityId: prescription.id,
+      ...getRequestAuditContext(request),
+      metadata: {
+        consultationId,
+        patientId: scopedConsultation.patientId,
       },
     })
 

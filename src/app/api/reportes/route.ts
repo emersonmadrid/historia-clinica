@@ -1,15 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth } from '@/lib/permissions'
+import { getActorContext } from '@/lib/authz'
 import { handleApiError } from '@/lib/errors'
 import { startOfMonth, subMonths, startOfWeek, subWeeks, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const now = new Date()
 
@@ -19,7 +21,7 @@ export async function GET(_request: NextRequest) {
       const start = startOfMonth(subMonths(now, i))
       const end = startOfMonth(subMonths(now, i - 1))
       const count = await prisma.clinicalRecord.count({
-        where: { date: { gte: start, lt: end } },
+        where: { date: { gte: start, lt: end }, patient: { organizationId: actor.organizationId } },
       })
       monthsData.push({
         mes: format(start, 'MMM yyyy', { locale: es }),
@@ -31,6 +33,7 @@ export async function GET(_request: NextRequest) {
     const appointmentGroups = await prisma.appointment.groupBy({
       by: ['status'],
       _count: { status: true },
+      where: { patient: { organizationId: actor.organizationId } },
     })
 
     const statusLabels: Record<string, string> = {
@@ -50,7 +53,7 @@ export async function GET(_request: NextRequest) {
     const genderGroups = await prisma.patient.groupBy({
       by: ['gender'],
       _count: { gender: true },
-      where: { active: true },
+      where: { active: true, organizationId: actor.organizationId },
     })
 
     const genderLabels: Record<string, string> = {
@@ -70,7 +73,7 @@ export async function GET(_request: NextRequest) {
       const start = startOfWeek(subWeeks(now, i), { weekStartsOn: 1 })
       const end = startOfWeek(subWeeks(now, i - 1), { weekStartsOn: 1 })
       const count = await prisma.appointment.count({
-        where: { dateTime: { gte: start, lt: end } },
+        where: { dateTime: { gte: start, lt: end }, patient: { organizationId: actor.organizationId } },
       })
       weeksData.push({
         semana: format(start, 'dd/MM', { locale: es }),

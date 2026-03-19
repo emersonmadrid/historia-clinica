@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,7 +27,7 @@ interface User {
   name: string
   email: string
   role: string
-  speciality: string | null
+  specialty: string
   active: boolean
   createdAt: string
 }
@@ -40,8 +39,21 @@ const roleOptions = [
   { value: 'RECEPTIONIST', label: 'Recepcionista' },
 ]
 
+const specialtyOptions = [
+  { value: 'GENERAL_MEDICINE', label: 'Medicina General' },
+  { value: 'PSYCHOLOGY',       label: 'Psicología' },
+  { value: 'PSYCHIATRY',       label: 'Psiquiatría' },
+  { value: 'NUTRITION',        label: 'Nutrición' },
+  { value: 'PHYSIOTHERAPY',    label: 'Fisioterapia' },
+  { value: 'OTHER',            label: 'Otra especialidad' },
+]
+
 function roleLabel(role: string) {
   return roleOptions.find((r) => r.value === role)?.label || role
+}
+
+function specialtyLabel(specialty: string) {
+  return specialtyOptions.find((s) => s.value === specialty)?.label || specialty
 }
 
 export default function UsuariosPage() {
@@ -58,14 +70,14 @@ export default function UsuariosPage() {
     email: '',
     password: '',
     role: 'DOCTOR',
-    speciality: '',
+    specialty: 'GENERAL_MEDICINE',
   })
 
   // Edit form state
   const [editForm, setEditForm] = useState({
     name: '',
     role: 'DOCTOR',
-    speciality: '',
+    specialty: 'GENERAL_MEDICINE',
     active: true,
   })
 
@@ -99,7 +111,7 @@ export default function UsuariosPage() {
       if (res.ok) {
         toast({ title: 'Usuario creado correctamente' })
         setCreateOpen(false)
-        setCreateForm({ name: '', email: '', password: '', role: 'DOCTOR', speciality: '' })
+        setCreateForm({ name: '', email: '', password: '', role: 'DOCTOR', specialty: 'GENERAL_MEDICINE' })
         fetchUsers()
       } else {
         const data = await res.json()
@@ -117,7 +129,7 @@ export default function UsuariosPage() {
     setEditForm({
       name: user.name,
       role: user.role,
-      speciality: user.speciality || '',
+      specialty: user.specialty || 'GENERAL_MEDICINE',
       active: user.active,
     })
     setEditOpen(true)
@@ -166,14 +178,12 @@ export default function UsuariosPage() {
         </Button>
       </div>
 
-      <Card className="rounded-none">
-        <CardHeader className="border-b border-border bg-surface-alt pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Usuarios ({users.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
+      <div className="panel overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-border bg-surface-alt/80 px-5 py-3.5">
+          <Users className="h-4 w-4 text-foreground-muted" />
+          <p className="text-sm font-semibold text-foreground">Usuarios ({users.length})</p>
+        </div>
+        <div className="p-0">
           {loading ? (
             <p className="text-sm text-foreground-subtle py-8 text-center">Cargando...</p>
           ) : users.length === 0 ? (
@@ -187,7 +197,7 @@ export default function UsuariosPage() {
                     <p className="text-xs text-foreground-muted">{user.email}</p>
                   </div>
                   <div className="min-w-0 text-xs text-foreground-muted">
-                    {user.speciality || 'Sin especialidad'}
+                    {specialtyLabel(user.specialty)}
                   </div>
                   <div className="text-xs text-foreground-muted">
                     {roleLabel(user.role)}
@@ -202,8 +212,8 @@ export default function UsuariosPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Create User Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -256,12 +266,17 @@ export default function UsuariosPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-speciality">Especialidad (opcional)</Label>
-              <Input
-                id="create-speciality"
-                value={createForm.speciality}
-                onChange={(e) => setCreateForm({ ...createForm, speciality: e.target.value })}
-              />
+              <Label>Especialidad</Label>
+              <Select value={createForm.specialty} onValueChange={(v) => setCreateForm({ ...createForm, specialty: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {specialtyOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
@@ -301,12 +316,17 @@ export default function UsuariosPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-speciality">Especialidad</Label>
-              <Input
-                id="edit-speciality"
-                value={editForm.speciality}
-                onChange={(e) => setEditForm({ ...editForm, speciality: e.target.value })}
-              />
+              <Label>Especialidad</Label>
+              <Select value={editForm.specialty} onValueChange={(v) => setEditForm({ ...editForm, specialty: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {specialtyOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center gap-3">
               <Label htmlFor="edit-active">Estado</Label>

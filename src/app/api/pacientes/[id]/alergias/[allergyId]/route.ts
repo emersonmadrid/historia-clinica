@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth, assertRole } from '@/lib/permissions'
+import { getActorContext } from '@/lib/authz'
 import { handleApiError, NotFoundError } from '@/lib/errors'
 
 export async function DELETE(
@@ -12,11 +13,12 @@ export async function DELETE(
     const session = await auth()
     assertAuth(session)
     assertRole(session, ['DOCTOR', 'ADMIN'])
+    const actor = await getActorContext(session)
 
     const { id, allergyId } = await params
 
     const allergy = await prisma.allergy.findFirst({
-      where: { id: allergyId, patientId: id },
+      where: { id: allergyId, patientId: id, patient: { organizationId: actor.organizationId } },
     })
 
     if (!allergy) {

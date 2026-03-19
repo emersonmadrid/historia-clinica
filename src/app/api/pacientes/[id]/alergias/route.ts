@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth, assertRole } from '@/lib/permissions'
-import { handleApiError, NotFoundError } from '@/lib/errors'
+import { getActorContext, requireSameOrganization } from '@/lib/authz'
+import { handleApiError } from '@/lib/errors'
 import { z } from 'zod'
 
 const createAllergySchema = z.object({
@@ -20,13 +21,15 @@ export async function POST(
     const session = await auth()
     assertAuth(session)
     assertRole(session, ['DOCTOR', 'ADMIN'])
+    const actor = await getActorContext(session)
 
     const { id } = await params
 
-    const patient = await prisma.patient.findUnique({ where: { id } })
-    if (!patient) {
-      throw new NotFoundError('Paciente no encontrado')
-    }
+    const patient = await prisma.patient.findUnique({
+      where: { id },
+      select: { organizationId: true },
+    })
+    requireSameOrganization(patient, actor.organizationId, (item) => item.organizationId, 'Paciente no encontrado')
 
     const body = await request.json()
     const parsed = createAllergySchema.safeParse(body)

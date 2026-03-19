@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/prisma'
 
-export async function getPatientWithFullHistory(id: string) {
+export async function getPatientWithFullHistory(id: string, organizationId: string) {
   return prisma.patient.findUnique({
-    where: { id, active: true },
+    where: { id, active: true, organizationId },
     include: {
       allergies: { orderBy: { createdAt: 'desc' } },
       medicalBackgrounds: { orderBy: { createdAt: 'desc' } },
@@ -38,9 +38,9 @@ export async function getPatientWithFullHistory(id: string) {
   })
 }
 
-export async function getPatientForBriefing(id: string) {
+export async function getPatientForBriefing(id: string, organizationId: string) {
   return prisma.patient.findUnique({
-    where: { id, active: true },
+    where: { id, active: true, organizationId },
     include: {
       allergies: true,
       clinicalRecords: {

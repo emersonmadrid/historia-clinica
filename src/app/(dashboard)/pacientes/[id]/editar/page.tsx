@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FormField } from '@/components/shared/FormField'
 
 const schema = z.object({
@@ -145,9 +144,11 @@ export default function EditarPacientePage() {
 
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Datos Personales</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Datos Personales</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
             <FormField label="Nombre" required error={errors.firstName?.message}>
               <Input placeholder="Nombres" {...register('firstName')} />
             </FormField>
@@ -214,12 +215,14 @@ export default function EditarPacientePage() {
             <FormField label="N° Seguro/SIS" error={errors.insuranceNumber?.message}>
               <Input placeholder="Número de seguro" {...register('insuranceNumber')} />
             </FormField>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Datos de Contacto</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Datos de Contacto</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
             <FormField label="Teléfono" error={errors.phone?.message}>
               <Input placeholder="+51 999 999 999" {...register('phone')} />
             </FormField>
@@ -232,12 +235,14 @@ export default function EditarPacientePage() {
             <FormField label="Ciudad" error={errors.city?.message}>
               <Input placeholder="Lima" {...register('city')} />
             </FormField>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Contacto de Emergencia</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Contacto de Emergencia</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-3">
             <FormField label="Nombre" error={errors.emergencyContactName?.message}>
               <Input placeholder="Nombre completo" {...register('emergencyContactName')} />
             </FormField>
@@ -247,15 +252,17 @@ export default function EditarPacientePage() {
             <FormField label="Parentesco" error={errors.emergencyContactRel?.message}>
               <Input placeholder="Ej: Esposo/a, Hijo/a" {...register('emergencyContactRel')} />
             </FormField>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Notas Adicionales</CardTitle></CardHeader>
-          <CardContent>
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Notas Adicionales</p>
+          </div>
+          <div className="p-5">
             <Textarea placeholder="Observaciones adicionales..." rows={3} {...register('notes')} />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="outline" type="button" asChild>

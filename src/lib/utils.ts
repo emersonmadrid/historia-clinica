@@ -19,6 +19,10 @@ export function calculateAge(birthDate: Date | string): number {
   return differenceInYears(new Date(), new Date(birthDate))
 }
 
+export function calculateDaysSince(date: Date | string, now = new Date()): number {
+  return Math.floor((now.getTime() - new Date(date).getTime()) / 86400000)
+}
+
 export function getInitials(name: string): string {
   return name
     .split(' ')

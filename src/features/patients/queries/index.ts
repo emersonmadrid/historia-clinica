@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/prisma'
 
-export async function getPatientById(id: string) {
+export async function getPatientById(id: string, organizationId: string) {
   return prisma.patient.findUnique({
-    where: { id },
+    where: { id, organizationId },
     include: {
       allergies: { orderBy: { createdAt: 'desc' } },
       medicalBackgrounds: { orderBy: { createdAt: 'desc' } },
@@ -26,16 +26,18 @@ export async function getPatientById(id: string) {
 }
 
 export async function listPatients(filters: {
+  organizationId: string
   search?: string
   page?: number
   limit?: number
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
 }) {
-  const { search = '', page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = filters
+  const { organizationId, search = '', page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = filters
   const skip = (page - 1) * limit
 
   const where = {
+    organizationId,
     active: true,
     ...(search && {
       OR: [

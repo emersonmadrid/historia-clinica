@@ -133,7 +133,7 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
       ) : (
         <div className="space-y-3">
           {initial.map((rx) => (
-            <div key={rx.id} className="rounded-lg border border-sky-200 bg-sky-50/50 p-3">
+            <div key={rx.id} className="rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] p-3">
               <div className="flex items-start justify-between mb-2">
                 <span className="text-xs text-foreground-muted">Dr. {rx.doctor.name}</span>
                 <div className="flex items-center gap-1">
@@ -167,7 +167,7 @@ export function PrescriptionSection({ consultationId, prescriptions: initial }: 
                 ))}
               </div>
               {rx.notes && (
-                <p className="mt-2 text-xs text-foreground-muted border-t border-sky-200 pt-2">{rx.notes}</p>
+                <p className="mt-2 text-xs text-foreground-muted border-t border-[var(--border-subtle)] pt-2">{rx.notes}</p>
               )}
             </div>
           ))}

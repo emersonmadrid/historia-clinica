@@ -18,6 +18,7 @@ Sistema web completo para gestión de historias clínicas, pacientes, citas y co
 - **Exportación PDF** — Historia clínica completa
 - **Google Calendar** — Sincronización de citas
 - **Configuración** — Datos de la organización/clínica
+- **Auditoría** — Bitácora de accesos y acciones sensibles para administradores
 
 ## Stack Tecnológico
 
@@ -54,7 +55,7 @@ npm install
 cp .env.example .env
 ```
 
-Edita `.env` y completa los valores. Como mínimo necesitas `DATABASE_URL`, `DIRECT_URL` y `AUTH_SECRET`.
+Edita `.env` y completa los valores. Como mínimo necesitas `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` y `NEXTAUTH_URL`.
 
 Para generar `AUTH_SECRET`:
 
@@ -102,6 +103,19 @@ npx prisma studio    # Panel visual de la base de datos
 npx prisma migrate dev  # Aplicar migraciones
 npx ts-node prisma/seed.ts  # Cargar datos de prueba
 ```
+
+## Capacidades Enterprise
+
+- **Aislamiento por organización** en pacientes, usuarios, citas, consultas, recetas, reportes y configuración.
+- **Documentos privados**: los adjuntos clínicos no se sirven desde `public/`; se descargan vía API autenticada.
+- **Trazabilidad**: se registran acciones sensibles como creación/edición/exportación de pacientes y recetas, cambios de citas, subida/descarga/borrado de documentos y cambios administrativos.
+- **Panel de auditoría**: los administradores pueden revisar eventos recientes desde `Configuración > Auditoría`.
+
+## Límites Actuales
+
+- El rate limit y algunos cachés de IA siguen en memoria local; para despliegues multi-instancia conviene moverlos a Redis o KV.
+- No incluye aún backup/restore automatizado ni política de retención documental configurable.
+- No incluye firma digital ni trazabilidad avanzada por campo clínico.
 
 ## Estructura del proyecto
 

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Plus, ClipboardList, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { ConsultaCard } from './ConsultaCard'
 import type { ConsultaRecord } from './ConsultaCard'
 
@@ -20,8 +19,7 @@ export function ConsultasTimeline({ records, patientId }: Props) {
 
   if (records.length === 0) {
     return (
-      <Card className="rounded-none">
-        <CardContent className="py-14 text-center">
+      <div className="panel py-14 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-border bg-background">
             <ClipboardList className="h-7 w-7 text-foreground-subtle" />
           </div>
@@ -33,8 +31,7 @@ export function ConsultasTimeline({ records, patientId }: Props) {
               Nueva Consulta
             </Link>
           </Button>
-        </CardContent>
-      </Card>
+      </div>
     )
   }
 

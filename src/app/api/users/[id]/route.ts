@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth, assertRole } from '@/lib/permissions'
-import { handleApiError, NotFoundError, ConflictError } from '@/lib/errors'
+import { getActorContext, requireSameOrganization } from '@/lib/authz'
+import { getRequestAuditContext, writeAuditLog } from '@/lib/audit'
+import { handleApiError, ConflictError } from '@/lib/errors'
 import { updateUserSchema } from '@/features/users/schemas'
 import bcrypt from 'bcryptjs'
 
@@ -14,6 +16,7 @@ export async function GET(
     const session = await auth()
     assertAuth(session)
     assertRole(session, ['ADMIN'])
+    const actor = await getActorContext(session)
 
     const { id } = await params
 
@@ -24,16 +27,15 @@ export async function GET(
         name: true,
         email: true,
         role: true,
-        speciality: true,
+        specialty: true,
         active: true,
         createdAt: true,
         updatedAt: true,
+        organizationId: true,
       },
     })
 
-    if (!user) {
-      throw new NotFoundError('Usuario no encontrado')
-    }
+    requireSameOrganization(user, actor.organizationId, (item) => item.organizationId, 'Usuario no encontrado')
 
     return NextResponse.json(user)
   } catch (error) {
@@ -49,6 +51,7 @@ export async function PUT(
     const session = await auth()
     assertAuth(session)
     assertRole(session, ['ADMIN'])
+    const actor = await getActorContext(session)
 
     const { id } = await params
     const body = await request.json()
@@ -68,16 +71,17 @@ export async function PUT(
       throw new ConflictError('No puedes desactivar tu propia cuenta')
     }
 
-    const existing = await prisma.user.findUnique({ where: { id } })
-    if (!existing) {
-      throw new NotFoundError('Usuario no encontrado')
-    }
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, organizationId: true },
+    })
+    requireSameOrganization(existing, actor.organizationId, (item) => item.organizationId, 'Usuario no encontrado')
 
     // Build update data
     const updateData: Record<string, unknown> = {}
     if (data.name !== undefined) updateData.name = data.name
     if (data.role !== undefined) updateData.role = data.role
-    if (data.speciality !== undefined) updateData.speciality = data.speciality
+    if (data.specialty !== undefined) updateData.specialty = data.specialty
     if (data.active !== undefined) updateData.active = data.active
     if (data.password) {
       updateData.password = await bcrypt.hash(data.password, 10)
@@ -90,12 +94,23 @@ export async function PUT(
         name: true,
         email: true,
         role: true,
-        speciality: true,
+        specialty: true,
         active: true,
         createdAt: true,
         updatedAt: true,
       },
       data: updateData,
+    })
+
+    const audit = getRequestAuditContext(request)
+    await writeAuditLog({
+      organizationId: actor.organizationId,
+      actorUserId: actor.userId,
+      action: 'USER_UPDATED',
+      entityType: 'user',
+      entityId: user.id,
+      ...audit,
+      metadata: { role: user.role, active: user.active },
     })
 
     return NextResponse.json(user)

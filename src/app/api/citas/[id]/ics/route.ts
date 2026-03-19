@@ -6,10 +6,11 @@ function toICSDate(date: Date) {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  const token = new URL(req.url).searchParams.get('token')
 
   const appointment = await prisma.appointment.findUnique({
     where: { id },
@@ -19,7 +20,7 @@ export async function GET(
     },
   })
 
-  if (!appointment) {
+  if (!appointment || !token || appointment.rsvpToken !== token) {
     return new NextResponse('Not found', { status: 404 })
   }
 

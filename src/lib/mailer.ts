@@ -50,38 +50,9 @@ function googleCalendarUrl(data: AppointmentEmailData): string {
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${details}`
 }
 
-// .ics content for Apple Calendar / Outlook (downloaded via link)
-function generateICS(data: AppointmentEmailData): string {
-  const end = new Date(data.dateTime.getTime() + data.duration * 60 * 1000)
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Feliz Horizonte//ES',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    `UID:${data.appointmentId}@felizhorizonte.pe`,
-    `DTSTAMP:${toICSDate(new Date())}`,
-    `DTSTART:${toICSDate(data.dateTime)}`,
-    `DTEND:${toICSDate(end)}`,
-    `SUMMARY:Cita médica — ${data.doctorName}`,
-    `DESCRIPTION:Motivo: ${data.reason}\\nDuración: ${data.duration} minutos\\nDoctor: ${data.doctorName}${data.notes ? '\\nNotas: ' + data.notes : ''}`,
-    `ORGANIZER;CN=Feliz Horizonte:MAILTO:${process.env.MAIL_USER}`,
-    'STATUS:CONFIRMED',
-    'SEQUENCE:0',
-    'BEGIN:VALARM',
-    'TRIGGER:-PT24H',
-    'ACTION:DISPLAY',
-    'DESCRIPTION:Recordatorio: Cita médica mañana',
-    'END:VALARM',
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n')
-}
-
 function calendarButtons(data: AppointmentEmailData): string {
   const googleUrl = googleCalendarUrl(data)
-  const icsUrl = `${process.env.NEXTAUTH_URL}/api/citas/${data.appointmentId}/ics`
+  const icsUrl = `${process.env.NEXTAUTH_URL}/api/citas/${data.appointmentId}/ics?token=${encodeURIComponent(data.rsvpToken ?? '')}`
   const base = `${process.env.NEXTAUTH_URL}/api/citas/rsvp?token=${data.rsvpToken}`
   const confirmUrl = `${base}&action=confirm`
   const cancelUrl  = `${base}&action=cancel`

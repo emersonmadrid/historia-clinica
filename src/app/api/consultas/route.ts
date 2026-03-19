@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth, assertRole } from '@/lib/permissions'
+import { getActorContext, requireSameOrganization } from '@/lib/authz'
+import { getRequestAuditContext, writeAuditLog } from '@/lib/audit'
 import { handleApiError } from '@/lib/errors'
 import { createConsultationSchema } from '@/features/consultations/schemas'
 import { listConsultations } from '@/features/consultations/queries'
@@ -10,6 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const { searchParams } = new URL(request.url)
     const patientId = searchParams.get('patientId')
@@ -18,7 +21,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'patientId requerido' }, { status: 400 })
     }
 
-    const records = await listConsultations(patientId)
+    const records = await listConsultations(patientId, actor.organizationId)
 
     return NextResponse.json(records)
   } catch (error) {
@@ -31,6 +34,7 @@ export async function POST(request: NextRequest) {
     const session = await auth()
     assertAuth(session)
     assertRole(session, ['DOCTOR'])
+    const actor = await getActorContext(session)
 
     const body = await request.json()
     const parsed = createConsultationSchema.safeParse(body)
@@ -39,14 +43,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Datos inválidos', details: parsed.error.flatten() }, { status: 400 })
     }
 
-    const { vitalSigns, diagnoses, prescriptions, ...consultationData } = parsed.data
+    const { vitalSigns, diagnoses, prescriptions, noteTemplate, ...consultationData } = parsed.data
     const doctorId = session.user.id
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: consultationData.patientId },
+      select: { organizationId: true },
+    })
+    requireSameOrganization(patient, actor.organizationId, (item) => item.organizationId, 'Paciente no encontrado')
 
     const record = await prisma.clinicalRecord.create({
       data: {
         ...consultationData,
         doctorId,
         date: new Date(),
+        noteTemplate: noteTemplate ?? 'SOAP',
         ...(vitalSigns && {
           vitalSigns: {
             create: {
@@ -80,6 +91,16 @@ export async function POST(request: NextRequest) {
         vitalSigns: true,
         diagnoses: true,
       },
+    })
+
+    await writeAuditLog({
+      organizationId: actor.organizationId,
+      actorUserId: actor.userId,
+      action: 'CONSULTATION_CREATED',
+      entityType: 'consultation',
+      entityId: record.id,
+      ...getRequestAuditContext(request),
+      metadata: { patientId: consultationData.patientId },
     })
 
     // Create prescriptions atomically

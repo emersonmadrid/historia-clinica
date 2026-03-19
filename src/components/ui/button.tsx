@@ -4,22 +4,22 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap text-[13px] font-medium transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40 rounded-md',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/30 focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-40 active:scale-[0.98]',
   {
     variants: {
       variant: {
-        default:     'bg-primary text-white hover:bg-primary-hover',
-        destructive: 'bg-danger text-white hover:bg-red-700',
-        outline:     'border border-border bg-surface text-foreground hover:bg-border-subtle',
-        secondary:   'bg-border-subtle text-foreground hover:bg-border',
-        ghost:       'text-foreground-muted hover:bg-border-subtle hover:text-foreground',
-        link:        'text-primary underline-offset-4 hover:underline p-0 h-auto',
+        default:     'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] shadow-sm',
+        destructive: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
+        outline:     'border border-[var(--border)] bg-white text-[var(--foreground)] hover:border-[var(--border-interactive)] hover:bg-[var(--surface-alt)]',
+        secondary:   'border border-[var(--border-subtle)] bg-[var(--surface-alt)] text-[var(--foreground-muted)] hover:bg-[var(--surface-muted)]',
+        ghost:       'text-[var(--foreground-muted)] hover:bg-[var(--surface-alt)] hover:text-[var(--foreground)]',
+        link:        'text-[var(--primary)] underline-offset-4 hover:underline p-0 h-auto',
       },
       size: {
-        default: 'h-8 px-3.5',
-        sm:      'h-7 px-2.5 text-[12px]',
-        lg:      'h-9 px-5',
-        icon:    'h-8 w-8',
+        default: 'h-9 px-4 text-sm',
+        sm:      'h-8 px-3 text-xs',
+        lg:      'h-10 px-6 text-sm',
+        icon:    'h-9 w-9',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

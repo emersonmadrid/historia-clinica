@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth, assertRole } from '@/lib/permissions'
+import { getActorContext, requireSameOrganization } from '@/lib/authz'
+import { getRequestAuditContext, writeAuditLog } from '@/lib/audit'
 import { handleApiError } from '@/lib/errors'
 import { z } from 'zod'
 import { vitalSignsSchema, diagnosisSchema } from '@/features/consultations/schemas'
@@ -24,12 +26,14 @@ export async function GET(
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const { id } = await params
 
     const record = await prisma.clinicalRecord.findUnique({
       where: { id },
       include: {
+        patient: { select: { organizationId: true } },
         doctor: { select: { id: true, name: true, speciality: true } },
         vitalSigns: true,
         diagnoses: true,
@@ -43,7 +47,7 @@ export async function GET(
       },
     })
 
-    if (!record) return NextResponse.json({ error: 'Consulta no encontrada' }, { status: 404 })
+    requireSameOrganization(record, actor.organizationId, (item) => item.patient.organizationId, 'Consulta no encontrada')
 
     return NextResponse.json(record)
   } catch (error) {
@@ -59,6 +63,7 @@ export async function PATCH(
     const session = await auth()
     assertAuth(session)
     assertRole(session, ['DOCTOR'])
+    const actor = await getActorContext(session)
 
     const { id } = await params
 
@@ -73,6 +78,11 @@ export async function PATCH(
     }
 
     const { vitalSigns, diagnoses, ...consultationData } = parsed.data
+    const existing = await prisma.clinicalRecord.findUnique({
+      where: { id },
+      include: { patient: { select: { organizationId: true } } },
+    })
+    requireSameOrganization(existing, actor.organizationId, (item) => item.patient.organizationId, 'Consulta no encontrada')
 
     // Update consultation text fields
     await prisma.clinicalRecord.update({
@@ -114,6 +124,15 @@ export async function PATCH(
         })
       }
     }
+
+    await writeAuditLog({
+      organizationId: actor.organizationId,
+      actorUserId: actor.userId,
+      action: 'CONSULTATION_UPDATED',
+      entityType: 'consultation',
+      entityId: id,
+      ...getRequestAuditContext(request),
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

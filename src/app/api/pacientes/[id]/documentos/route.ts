@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth } from '@/lib/permissions'
+import { getActorContext } from '@/lib/authz'
+import { getRequestAuditContext, writeAuditLog } from '@/lib/audit'
 import { handleApiError, NotFoundError } from '@/lib/errors'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { savePrivatePatientFile } from '@/lib/private-files'
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'image/jpeg',
@@ -28,10 +28,13 @@ export async function GET(
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const { id } = await params
 
-    const patient = await prisma.patient.findUnique({ where: { id, active: true } })
+    const patient = await prisma.patient.findUnique({
+      where: { id, active: true, organizationId: actor.organizationId },
+    })
     if (!patient) throw new NotFoundError('Paciente no encontrado')
 
     const documents = await prisma.patientDocument.findMany({
@@ -53,10 +56,13 @@ export async function POST(
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const { id } = await params
 
-    const patient = await prisma.patient.findUnique({ where: { id, active: true } })
+    const patient = await prisma.patient.findUnique({
+      where: { id, active: true, organizationId: actor.organizationId },
+    })
     if (!patient) throw new NotFoundError('Paciente no encontrado')
 
     const formData = await request.formData()
@@ -78,28 +84,39 @@ export async function POST(
     const ext = file.name.split('.').pop() ?? 'bin'
     const fileId = crypto.randomUUID()
     const fileName = `${fileId}.${ext}`
-    const uploadDir = join(process.cwd(), 'public', 'uploads', id)
-
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    await writeFile(join(uploadDir, fileName), buffer)
+    await savePrivatePatientFile(id, fileName, buffer)
 
-    const fileUrl = `/uploads/${id}/${fileName}`
+    const fileUrl = `/api/pacientes/${id}/documentos/${fileId}/file`
 
     const document = await prisma.patientDocument.create({
       data: {
+        id: fileId,
         patientId: id,
         name: file.name,
         description: description || null,
         fileUrl,
         fileSize: file.size,
         mimeType: file.type,
-        uploadedById: session!.user.id,
+        uploadedById: actor.userId,
       },
       include: { uploadedBy: { select: { id: true, name: true } } },
+    })
+
+    const audit = getRequestAuditContext(request)
+    await writeAuditLog({
+      organizationId: actor.organizationId,
+      actorUserId: actor.userId,
+      action: 'DOCUMENT_UPLOADED',
+      entityType: 'patient_document',
+      entityId: document.id,
+      ...audit,
+      metadata: {
+        patientId: id,
+        mimeType: document.mimeType,
+        fileSize: document.fileSize,
+      },
     })
 
     return NextResponse.json(document, { status: 201 })

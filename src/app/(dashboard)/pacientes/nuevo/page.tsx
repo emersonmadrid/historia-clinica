@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FormField } from '@/components/shared/FormField'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 
@@ -104,11 +103,11 @@ export default function NuevoPacientePage() {
 
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <Card className="rounded-none">
-          <CardHeader className="border-b border-border bg-surface-alt pb-4">
-            <CardTitle className="text-base">Datos personales</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Datos personales</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
             <FormField label="Nombre" required error={errors.firstName?.message}>
               <Input placeholder="Nombres" {...register('firstName')} />
             </FormField>
@@ -198,14 +197,14 @@ export default function NuevoPacientePage() {
             <FormField label="N° Seguro/SIS" error={errors.insuranceNumber?.message}>
               <Input placeholder="Número de seguro" {...register('insuranceNumber')} />
             </FormField>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="rounded-none">
-          <CardHeader className="border-b border-border bg-surface-alt pb-4">
-            <CardTitle className="text-base">Contacto</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Contacto</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
             <FormField label="Teléfono" error={errors.phone?.message}>
               <Input placeholder="+51 999 999 999" {...register('phone')} />
             </FormField>
@@ -221,14 +220,14 @@ export default function NuevoPacientePage() {
             <FormField label="Ciudad" error={errors.city?.message}>
               <Input placeholder="Lima" {...register('city')} />
             </FormField>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="rounded-none">
-          <CardHeader className="border-b border-border bg-surface-alt pb-4">
-            <CardTitle className="text-base">Contacto de emergencia</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Contacto de emergencia</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-3">
             <FormField label="Nombre" error={errors.emergencyContactName?.message}>
               <Input placeholder="Nombre completo" {...register('emergencyContactName')} />
             </FormField>
@@ -240,21 +239,21 @@ export default function NuevoPacientePage() {
             <FormField label="Parentesco" error={errors.emergencyContactRel?.message}>
               <Input placeholder="Ej: Esposo/a, Hijo/a" {...register('emergencyContactRel')} />
             </FormField>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="rounded-none">
-          <CardHeader className="border-b border-border bg-surface-alt pb-4">
-            <CardTitle className="text-base">Notas</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Notas</p>
+          </div>
+          <div className="p-5">
             <Textarea
               placeholder="Observaciones adicionales sobre el paciente..."
               rows={3}
               {...register('notes')}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Actions */}
         <div className="sticky bottom-0 z-10 -mx-4 border-t border-border bg-surface/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6">

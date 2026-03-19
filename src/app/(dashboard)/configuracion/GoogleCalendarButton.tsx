@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { CheckCircle, XCircle, Calendar, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 interface Props {
   isConnected: boolean
@@ -77,7 +78,7 @@ export function GoogleCalendarButton({ isConnected, status }: Props) {
           </div>
         ) : (
           <Button asChild size="sm">
-            <a href="/api/auth/google/connect">Conectar</a>
+            <Link href="/api/auth/google/connect">Conectar</Link>
           </Button>
         )}
       </div>

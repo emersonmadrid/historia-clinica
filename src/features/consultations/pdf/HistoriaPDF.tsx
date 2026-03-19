@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
 } from '@react-pdf/renderer'
+import { calculateAge } from '@/lib/utils'
 
 const styles = StyleSheet.create({
   page: {
@@ -203,7 +204,7 @@ interface HistoriaPDFProps {
 }
 
 export function HistoriaPDF({ patient, printDate, orgName = 'Feliz Horizonte' }: HistoriaPDFProps) {
-  const age = Math.floor((Date.now() - new Date(patient.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+  const age = calculateAge(patient.birthDate)
 
   const genderMap: Record<string, string> = { MALE: 'Masculino', FEMALE: 'Femenino', OTHER: 'Otro' }
   const docTypeMap: Record<string, string> = { DNI: 'DNI', CE: 'C.E.', PASSPORT: 'Pasaporte', RUC: 'RUC' }

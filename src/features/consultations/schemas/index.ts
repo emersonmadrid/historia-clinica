@@ -35,7 +35,23 @@ export const createConsultationSchema = z.object({
   assessment: z.string().optional().nullable(),
   plan: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  noteTemplate: z.enum(['SOAP', 'PSYCHOLOGY', 'NUTRITION']).optional().default('SOAP'),
   vitalSigns: vitalSignsSchema.optional(),
   diagnoses: z.array(diagnosisSchema).optional(),
   prescriptions: z.array(prescriptionInConsultationSchema).optional(),
+})
+
+export const createReferralSchema = z.object({
+  patientId: z.string().min(1),
+  toSpecialty: z.enum(['GENERAL_MEDICINE', 'PSYCHOLOGY', 'PSYCHIATRY', 'NUTRITION', 'PHYSIOTHERAPY', 'OTHER']),
+  reason: z.string().min(1, 'Motivo de derivación requerido'),
+  urgency: z.enum(['ROUTINE', 'PRIORITY', 'URGENT']).default('ROUTINE'),
+  notes: z.string().optional().nullable(),
+  toDoctorId: z.string().optional().nullable(),
+  consultationId: z.string().optional().nullable(),
+})
+
+export const updateReferralSchema = z.object({
+  status: z.enum(['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
+  notes: z.string().optional().nullable(),
 })

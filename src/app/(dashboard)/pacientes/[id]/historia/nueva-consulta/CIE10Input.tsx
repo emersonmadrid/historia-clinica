@@ -88,62 +88,63 @@ export function CIE10Input({
   }, [])
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-4" ref={containerRef}>
-      {/* Code field */}
-      <div className="space-y-1.5">
-        <Label>Código CIE-10</Label>
-        <Input
-          placeholder="J00"
-          {...codeProps}
-          value={codeValue ?? ''}
-        />
-        {codeError && <p className="text-xs text-red-600">{codeError}</p>}
-      </div>
+    <div className="space-y-1.5" ref={containerRef}>
 
-      {/* Description field with AI autocomplete */}
-      <div className="sm:col-span-3 space-y-1.5 relative">
-        <Label className="flex items-center gap-1.5">
+      {/* Descripción — campo principal, busca con IA */}
+      <div className="relative space-y-1">
+        <Label className="text-xs flex items-center gap-1">
           Descripción
-          {loading && <Loader2 className="h-3 w-3 animate-spin text-violet-500" />}
-          {!loading && (
-            <span className="inline-flex items-center gap-0.5 text-xs text-violet-500 font-normal">
-              <Sparkles className="h-3 w-3" />
-              IA
-            </span>
-          )}
+          {loading
+            ? <Loader2 className="h-3 w-3 animate-spin text-[var(--primary)]" />
+            : <span className="inline-flex items-center gap-0.5 text-[10px] text-[var(--primary)] font-normal"><Sparkles className="h-2.5 w-2.5" />IA</span>
+          }
         </Label>
         <Input
-          placeholder="Escribe el diagnóstico y la IA sugerirá el código..."
+          placeholder="Escribe el diagnóstico..."
+          className="text-xs"
           {...descriptionProps}
           value={descriptionValue ?? ''}
           onChange={handleDescriptionChange}
           autoComplete="off"
         />
-        {descriptionError && <p className="text-xs text-red-600">{descriptionError}</p>}
+        {descriptionError && <p className="text-xs text-[var(--danger)]">{descriptionError}</p>}
 
-        {/* Suggestions dropdown */}
+        {/* Dropdown de sugerencias */}
         {open && suggestions.length > 0 && (
-          <div className="absolute z-50 top-full mt-1 left-0 right-0 rounded-lg border border-violet-200 bg-surface shadow-lg overflow-hidden">
-            <div className="px-3 py-1.5 bg-violet-50 border-b border-violet-100 flex items-center gap-1.5">
-              <Sparkles className="h-3 w-3 text-violet-500" />
-              <span className="text-xs font-medium text-violet-600">Sugerencias IA — solo de apoyo</span>
+          <div className="absolute z-50 top-full mt-1 left-0 right-0 min-w-[220px] border border-[var(--border)] bg-[var(--surface)] shadow-lg overflow-hidden">
+            <div className="px-3 py-1.5 bg-[var(--primary-subtle)] border-b border-[var(--border-subtle)] flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3 text-[var(--primary)]" />
+              <span className="text-xs font-medium text-[var(--primary)]">Sugerencias IA</span>
             </div>
             {suggestions.map((s) => (
               <button
                 key={s.code}
                 type="button"
                 onClick={() => handleSelect(s)}
-                className="w-full text-left px-3 py-2.5 hover:bg-violet-50 transition-colors flex items-center gap-3 border-b border-border-subtle last:border-0"
+                className="w-full text-left px-3 py-2 hover:bg-[var(--primary-subtle)] transition-colors flex items-start gap-2 border-b border-[var(--border-subtle)] last:border-0"
               >
-                <span className="shrink-0 rounded bg-violet-100 px-1.5 py-0.5 font-mono text-xs font-semibold text-violet-700">
+                <span className="shrink-0 mt-0.5 bg-[var(--primary-subtle)] px-1.5 py-0.5 font-mono text-xs font-semibold text-[var(--primary)]">
                   {s.code}
                 </span>
-                <span className="text-sm text-foreground">{s.description}</span>
+                <span className="text-xs text-[var(--foreground)] leading-snug">{s.description}</span>
               </button>
             ))}
           </div>
         )}
       </div>
+
+      {/* Código CIE-10 — inline, se llena automático al seleccionar */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-[var(--foreground-subtle)] shrink-0">Código:</span>
+        <Input
+          placeholder="J00"
+          className="h-7 w-24 text-xs font-mono"
+          {...codeProps}
+          value={codeValue ?? ''}
+        />
+        {codeError && <p className="text-xs text-[var(--danger)]">{codeError}</p>}
+      </div>
+
     </div>
   )
 }

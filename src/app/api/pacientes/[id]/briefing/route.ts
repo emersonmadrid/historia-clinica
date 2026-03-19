@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { assertAuth } from '@/lib/permissions'
+import { getActorContext } from '@/lib/authz'
 import { handleApiError, NotFoundError } from '@/lib/errors'
 import { generateBriefing } from '@/lib/ai'
 import { getPatientForBriefing, extractAllMedications } from '@/lib/data/patients'
@@ -18,6 +19,7 @@ export async function GET(
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const { id } = await params
 
@@ -26,7 +28,7 @@ export async function GET(
       return NextResponse.json(hit.data)
     }
 
-    const patient = await getPatientForBriefing(id)
+    const patient = await getPatientForBriefing(id, actor.organizationId)
     if (!patient) throw new NotFoundError('Paciente no encontrado')
 
     const activeConditions = patient.clinicalRecords

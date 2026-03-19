@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth } from '@/lib/permissions'
+import { getActorContext, requireSameOrganization } from '@/lib/authz'
+import { getRequestAuditContext, writeAuditLog } from '@/lib/audit'
 import { handleApiError } from '@/lib/errors'
 import { createCalendarEvent } from '@/lib/google-calendar'
 import { sendAppointmentConfirmation } from '@/lib/mailer'
@@ -13,12 +15,14 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date') ?? undefined
+    const month = searchParams.get('month') ?? undefined
     const doctorId = searchParams.get('doctorId') ?? undefined
 
-    const appointments = await listAppointments({ date, doctorId })
+    const appointments = await listAppointments({ organizationId: actor.organizationId, date, month, doctorId })
 
     return NextResponse.json(appointments)
   } catch (error) {
@@ -30,6 +34,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const body = await request.json()
     const parsed = createAppointmentSchema.safeParse(body)
@@ -49,6 +54,7 @@ export async function POST(request: NextRequest) {
         doctorId: data.doctorId,
         status: { notIn: ['CANCELLED'] },
         dateTime: { lt: newEnd },
+        patient: { organizationId: actor.organizationId },
       },
       select: { dateTime: true, duration: true },
     })
@@ -64,6 +70,18 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       )
     }
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: data.patientId },
+      select: { organizationId: true },
+    })
+    requireSameOrganization(patient, actor.organizationId, (item) => item.organizationId, 'Paciente no encontrado')
+
+    const doctor = await prisma.user.findUnique({
+      where: { id: data.doctorId },
+      select: { organizationId: true },
+    })
+    requireSameOrganization(doctor, actor.organizationId, (item) => item.organizationId, 'Doctor no encontrado')
 
     const rsvpToken = randomBytes(32).toString('hex')
 
@@ -81,6 +99,21 @@ export async function POST(request: NextRequest) {
       include: {
         patient: { select: { id: true, firstName: true, lastName: true, email: true } },
         doctor: { select: { id: true, name: true, email: true } },
+      },
+    })
+
+    const audit = getRequestAuditContext(request)
+    await writeAuditLog({
+      organizationId: actor.organizationId,
+      actorUserId: actor.userId,
+      action: 'APPOINTMENT_CREATED',
+      entityType: 'appointment',
+      entityId: appointment.id,
+      ...audit,
+      metadata: {
+        patientId: appointment.patient.id,
+        doctorId: appointment.doctor.id,
+        status: appointment.status,
       },
     })
 

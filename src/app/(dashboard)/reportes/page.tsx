@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   BarChart,
@@ -18,7 +17,7 @@ import {
   LineChart,
   Line,
 } from 'recharts'
-import { RefreshCw, AlertCircle } from 'lucide-react'
+import { RefreshCw, AlertCircle, Sparkles } from 'lucide-react'
 
 interface ReportesData {
   consultasPorMes: { mes: string; cantidad: number }[]
@@ -28,14 +27,77 @@ interface ReportesData {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  Agendada: '#94a3b8',
-  Confirmada: '#0D9488',
+  Agendada: '#8ea6be',
+  Confirmada: '#0284c7',
   Cancelada: '#ef4444',
-  Completada: '#64748b',
+  Completada: '#4a6280',
   'No asistió': '#f59e0b',
 }
 
-const PIE_COLORS = ['#0D9488', '#64748b', '#94a3b8', '#0f766e']
+const PIE_COLORS = ['#0284c7', '#4a6280', '#8ea6be', '#075985']
+
+function generateInsights(data: ReportesData): string[] {
+  const insights: string[] = []
+
+  // Trend: compare last two months of consultations
+  const meses = data.consultasPorMes
+  if (meses.length >= 2) {
+    const last = meses[meses.length - 1].cantidad
+    const prev = meses[meses.length - 2].cantidad
+    if (prev > 0 && last > prev) {
+      const pct = Math.round(((last - prev) / prev) * 100)
+      insights.push(`Las consultas aumentaron un ${pct}% respecto al mes anterior`)
+    } else if (prev > 0 && last < prev) {
+      const pct = Math.round(((prev - last) / prev) * 100)
+      insights.push(`Las consultas disminuyeron un ${pct}% respecto al mes anterior`)
+    } else if (last === prev && last > 0) {
+      insights.push(`El volumen de consultas se mantuvo estable respecto al mes anterior`)
+    }
+  }
+
+  // No-show rate
+  const estados = data.citasPorEstado
+  const total = estados.reduce((s, e) => s + e.cantidad, 0)
+  const noShow = estados.find(e => e.estado === 'No asistió')?.cantidad ?? 0
+  const cancelled = estados.find(e => e.estado === 'Cancelada')?.cantidad ?? 0
+  if (total > 0) {
+    const noShowRate = Math.round((noShow / total) * 100)
+    const cancelRate = Math.round((cancelled / total) * 100)
+    if (noShowRate > 20) {
+      insights.push(`Alta tasa de ausencias (${noShowRate}%): considera implementar recordatorios automáticos`)
+    } else if (noShowRate > 0) {
+      insights.push(`Tasa de ausencias del ${noShowRate}% — dentro del rango aceptable`)
+    }
+    if (cancelRate > 15) {
+      insights.push(`Tasa de cancelaciones elevada (${cancelRate}%): revisar política de confirmación de citas`)
+    }
+  }
+
+  // Weekly trend: last 2 weeks
+  const semanas = data.citasPorSemana
+  if (semanas.length >= 2) {
+    const lastW = semanas[semanas.length - 1].cantidad
+    const prevW = semanas[semanas.length - 2].cantidad
+    if (prevW > 0 && lastW > prevW) {
+      insights.push(`La actividad semanal está en alza respecto a la semana anterior`)
+    }
+  }
+
+  // Completion rate
+  if (total > 0) {
+    const completed = estados.find(e => e.estado === 'Completada')?.cantidad ?? 0
+    const completionRate = Math.round((completed / total) * 100)
+    if (completionRate >= 80) {
+      insights.push(`Alta tasa de citas completadas (${completionRate}%) — excelente seguimiento`)
+    }
+  }
+
+  if (insights.length === 0) {
+    insights.push('No hay suficientes datos para generar insights en este período')
+  }
+
+  return insights
+}
 
 export default function ReportesPage() {
   const [data, setData] = useState<ReportesData | null>(null)
@@ -59,7 +121,13 @@ export default function ReportesPage() {
 
   useEffect(() => { fetchReportes() }, [])
 
-  const pageHeader = <h2 className="text-xl font-bold text-foreground">Reportes</h2>
+  const pageHeader = (
+    <section className="panel overflow-hidden px-5 py-6 sm:px-7">
+      <p className="section-kicker">Analítica clínica</p>
+      <h2 className="font-heading mt-1 text-3xl font-semibold text-foreground">Reportes</h2>
+      <p className="mt-2 text-sm text-foreground-muted">Visión ejecutiva sobre productividad, citas y composición de pacientes.</p>
+    </section>
+  )
 
   if (loading) {
     return (
@@ -67,7 +135,7 @@ export default function ReportesPage() {
         {pageHeader}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="border animate-pulse border-border bg-surface">
+            <div key={i} className="panel animate-pulse">
               <div className="p-5 pb-2">
                 <div className="h-4 w-32 rounded bg-background" />
                 <div className="h-3 w-20 rounded mt-1.5 bg-background" />
@@ -86,7 +154,7 @@ export default function ReportesPage() {
     return (
       <div className="space-y-5">
         {pageHeader}
-        <div className="flex flex-col items-center justify-center border py-12 text-center border-border bg-surface">
+        <div className="panel flex flex-col items-center justify-center py-12 text-center">
           <AlertCircle className="mb-3 h-6 w-6 text-danger" />
           <h3 className="text-sm font-semibold mb-1 text-foreground">No se pudieron cargar los reportes</h3>
           <p className="text-xs mb-4 text-foreground-muted">{error}</p>
@@ -99,17 +167,35 @@ export default function ReportesPage() {
     )
   }
 
+  const insights = generateInsights(data)
+
   return (
     <div className="space-y-5">
       {pageHeader}
 
+      {/* Insights IA */}
+      <div className="panel p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h3 className="font-heading text-xl font-semibold text-foreground">Insights del período</h3>
+        </div>
+        <ul className="space-y-2">
+          {insights.map((insight, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-foreground-muted">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              {insight}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="rounded-none">
-          <CardHeader className="border-b border-border bg-surface-alt pb-4">
-            <CardTitle className="text-base">Consultas por Mes</CardTitle>
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Consultas por Mes</p>
             <p className="text-xs text-foreground-muted">Últimos 6 meses</p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-5">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={data.consultasPorMes} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -126,27 +212,27 @@ export default function ReportesPage() {
                   allowDecimals={false}
                 />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e2e8f0' }}
                   formatter={(value) => [value ?? 0, 'Consultas']}
                 />
-                <Bar dataKey="cantidad" fill="#0D9488" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="cantidad" fill="#0284c7" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="rounded-none">
-          <CardHeader className="border-b border-border bg-surface-alt pb-4">
-            <CardTitle className="text-base">Citas por Estado</CardTitle>
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Citas por Estado</p>
             <p className="text-xs text-foreground-muted">Total histórico</p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-5">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={data.citasPorEstado} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="estado"
-                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  tick={{ fontSize: 11, fill: '#64748b' }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -157,10 +243,10 @@ export default function ReportesPage() {
                   allowDecimals={false}
                 />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e2e8f0' }}
                   formatter={(value) => [value ?? 0, 'Citas']}
                 />
-                <Bar dataKey="cantidad" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="cantidad" radius={[3, 3, 0, 0]}>
                   {data.citasPorEstado.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
@@ -170,15 +256,15 @@ export default function ReportesPage() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="rounded-none">
-          <CardHeader className="border-b border-border bg-surface-alt pb-4">
-            <CardTitle className="text-base">Pacientes por Género</CardTitle>
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Pacientes por Género</p>
             <p className="text-xs text-foreground-muted">Distribución de pacientes activos</p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-5">
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
@@ -196,7 +282,7 @@ export default function ReportesPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e2e8f0' }}
                   formatter={(value) => [value ?? 0, 'Pacientes']}
                 />
                 <Legend
@@ -206,15 +292,15 @@ export default function ReportesPage() {
                 />
               </PieChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="rounded-none">
-          <CardHeader className="border-b border-border bg-surface-alt pb-4">
-            <CardTitle className="text-base">Citas por Semana</CardTitle>
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-surface-alt/80 px-5 py-3.5">
+            <p className="text-sm font-semibold text-foreground">Citas por Semana</p>
             <p className="text-xs text-foreground-muted">Últimas 8 semanas</p>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-5">
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={data.citasPorSemana} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -231,21 +317,21 @@ export default function ReportesPage() {
                   allowDecimals={false}
                 />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e2e8f0' }}
                   formatter={(value) => [value ?? 0, 'Citas']}
                 />
                 <Line
                   type="monotone"
                   dataKey="cantidad"
-                  stroke="#0D9488"
+                  stroke="#0284c7"
                   strokeWidth={2}
-                  dot={{ fill: '#0D9488', r: 4 }}
+                  dot={{ fill: '#0284c7', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   )

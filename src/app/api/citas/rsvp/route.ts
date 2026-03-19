@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { deleteCalendarEvent } from '@/lib/google-calendar'
 import { sendAppointmentCancellation, sendAppointmentRsvp } from '@/lib/mailer'
+import { fireAndForgetAudit, getRequestAuditContext } from '@/lib/audit'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   const appointment = await prisma.appointment.findUnique({
     where: { rsvpToken: token },
     include: {
-      patient: { select: { firstName: true, lastName: true, email: true } },
+      patient: { select: { firstName: true, lastName: true, email: true, organizationId: true } },
       doctor: { select: { id: true, name: true, email: true } },
     },
   })
@@ -37,6 +38,15 @@ export async function GET(request: NextRequest) {
     await prisma.appointment.update({
       where: { id: appointment.id },
       data: { status: 'CONFIRMED' },
+    })
+    fireAndForgetAudit({
+      organizationId: appointment.patient.organizationId ?? appointment.doctor.id,
+      actorUserId: null,
+      action: 'APPOINTMENT_RSVP',
+      entityType: 'appointment',
+      entityId: appointment.id,
+      ...getRequestAuditContext(request),
+      metadata: { response: 'confirm' },
     })
 
     // Notify doctor
@@ -59,6 +69,15 @@ export async function GET(request: NextRequest) {
     await prisma.appointment.update({
       where: { id: appointment.id },
       data: { status: 'CANCELLED' },
+    })
+    fireAndForgetAudit({
+      organizationId: appointment.patient.organizationId ?? appointment.doctor.id,
+      actorUserId: null,
+      action: 'APPOINTMENT_RSVP',
+      entityType: 'appointment',
+      entityId: appointment.id,
+      ...getRequestAuditContext(request),
+      metadata: { response: 'cancel' },
     })
 
     // Delete from Google Calendar + notify doctor

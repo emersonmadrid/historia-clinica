@@ -1,65 +1,168 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #F4F6F8;
-  --color-surface:    #FFFFFF;
-  --color-surface-alt:#F8FAFC;
+  /* ── Sidebar ─────────────────────────────────────────────── */
+  --color-sidebar-bg:        #ffffff;
+  --color-sidebar-fg:        #0f172a;
+  --color-sidebar-fg-muted:  #334155;
+  --color-sidebar-border:    #e2e8f0;
+  --color-sidebar-active-bg: #eff6ff;
+  --color-sidebar-hover-bg:  #f8fafc;
+  --color-sidebar-accent:    #1d4ed8;
 
-  --color-foreground:        #0F172A;
-  --color-foreground-muted:  #475569;
-  --color-foreground-subtle: #94A3B8;
+  /* ── Layout surfaces ──────────────────────────────────────── */
+  --color-background:    #f1f5f9;
+  --color-surface:       #ffffff;
+  --color-surface-alt:   #f8fafc;
+  --color-surface-muted: #f1f5f9;
 
-  --color-primary:        #0F766E;
-  --color-primary-hover:  #115E59;
-  --color-primary-fg:     #FFFFFF;
-  --color-primary-subtle: rgba(15, 118, 110, 0.06);
+  /* ── Text ─────────────────────────────────────────────────── */
+  --color-foreground:        #0f172a;
+  --color-foreground-muted:  #334155;
+  --color-foreground-subtle: #64748b;
 
-  --color-border:             #E2E8F0;
-  --color-border-subtle:      #F1F5F9;
-  --color-border-interactive: #CBD5E1;
+  /* ── Brand — azul clínico fuerte ─────────────────────────── */
+  --color-primary:        #1d4ed8;
+  --color-primary-hover:  #1e40af;
+  --color-primary-fg:     #ffffff;
+  --color-primary-subtle: rgba(29, 78, 216, 0.08);
+  --color-primary-strong: #1e3a8a;
 
-  --color-ring: #0D9488;
+  /* ── Borders ──────────────────────────────────────────────── */
+  --color-border:             #cbd5e1;
+  --color-border-subtle:      #e2e8f0;
+  --color-border-interactive: #94a3b8;
+  --color-ring:               #1d4ed8;
 
-  --color-success: #16A34A;
-  --color-warning: #D97706;
-  --color-danger:  #DC2626;
+  /* ── Status ───────────────────────────────────────────────── */
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger:  #b91c1c;
+  --color-info:    #0369a1;
+
+  /* ── Avatar ───────────────────────────────────────────────── */
+  --color-avatar-bg: #1e40af;
 }
 
 :root {
-  --background:         #F4F6F8;
-  --surface:            #FFFFFF;
-  --surface-alt:        #F8FAFC;
-  --foreground:         #0F172A;
-  --foreground-muted:   #475569;
-  --foreground-subtle:  #94A3B8;
-  --primary:            #0F766E;
-  --primary-hover:      #115E59;
-  --primary-subtle:     rgba(15, 118, 110, 0.06);
-  --border:             #E2E8F0;
-  --border-subtle:      #F1F5F9;
-  --border-interactive: #CBD5E1;
-  --ring:               #0D9488;
-  --radius:             8px;
-  --shadow-card:        0 1px 2px rgba(15,23,42,0.03);
-  --shadow-elevated:    0 8px 24px rgba(15,23,42,0.06);
-  --success: #16A34A;
-  --warning: #D97706;
-  --danger:  #DC2626;
+  /* Sidebar */
+  --sidebar-bg:          #ffffff;
+  --sidebar-fg:          #0f172a;
+  --sidebar-fg-muted:    #334155;
+  --sidebar-border:      #e2e8f0;
+  --sidebar-active-bg:   #eff6ff;
+  --sidebar-hover-bg:    #f8fafc;
+  --sidebar-accent:      #1d4ed8;
+
+  /* Surfaces */
+  --background:         #f1f5f9;
+  --surface:            #ffffff;
+  --surface-alt:        #f8fafc;
+  --surface-muted:      #f1f5f9;
+
+  /* Text */
+  --foreground:         #0f172a;
+  --foreground-muted:   #334155;
+  --foreground-subtle:  #64748b;
+
+  /* Brand */
+  --primary:            #1d4ed8;
+  --primary-hover:      #1e40af;
+  --primary-fg:         #ffffff;
+  --primary-subtle:     rgba(29, 78, 216, 0.08);
+  --primary-strong:     #1e3a8a;
+
+  /* Borders */
+  --border:             #cbd5e1;
+  --border-subtle:      #e2e8f0;
+  --border-interactive: #94a3b8;
+  --ring:               #1d4ed8;
+
+  /* Radius */
+  --radius:    8px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+
+  /* Shadows */
+  --shadow-card:     0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-elevated: 0 4px 16px rgba(15, 23, 42, 0.10), 0 1px 4px rgba(15, 23, 42, 0.06);
+
+  /* Status */
+  --success: #15803d;
+  --warning: #b45309;
+  --danger:  #b91c1c;
+  --info:    #0369a1;
+
+  /* Misc */
+  --avatar-bg:  #1e40af;
+  --grid-line:  rgba(226, 232, 240, 0.5);
 }
 
 html, body {
-  font-family: 'IBM Plex Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #F4F6F8;
-  color: #0F172A;
+  font-family: var(--font-inter), 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 15px;
 }
 
 * { box-sizing: border-box; }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+
+a, button, input, textarea, select {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 100ms ease;
+}
+
+.font-heading {
+  font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.015em;
+}
+
+/* ── Cards & panels ─────────────────────────────────────── */
+
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
+}
+
+.panel-muted {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Typography helpers ─────────────────────────────────── */
+
+.section-kicker {
+  color: var(--foreground-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+
 .tabular { font-variant-numeric: tabular-nums; }
 
 ::selection {
-  background: rgba(13, 148, 136, 0.18);
+  background: rgba(13, 148, 136, 0.12);
+  color: var(--primary-strong);
 }

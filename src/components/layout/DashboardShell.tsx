@@ -17,16 +17,13 @@ export function DashboardShell({ user, children }: Props) {
   const pathname = usePathname()
 
   const handleToggle = () => {
-    setCollapsed(c => {
-      const next = !c
-      return next
-    })
+    setCollapsed(c => !c)
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-background text-foreground">
+    <div className="flex min-h-screen w-full bg-[var(--background)] text-[var(--foreground)]">
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
       <CommandPalette />
       <Sidebar
@@ -37,10 +34,10 @@ export function DashboardShell({ user, children }: Props) {
         collapsed={collapsed}
         onToggle={handleToggle}
       />
-      <div className={`flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 ease-in-out ${collapsed ? 'lg:pl-[60px]' : 'lg:pl-[244px]'}`}>
+      <div className={`flex min-w-0 flex-1 flex-col transition-[padding-left] duration-400 cubic-bezier(0.16, 1, 0.3, 1) ${collapsed ? 'lg:pl-[56px]' : 'lg:pl-[220px]'}`}>
         <Header user={user} onMenuToggle={() => setSidebarOpen(o => !o)} />
-        <main className="flex-1 px-4 pb-8 pt-4 sm:px-5 sm:pb-10 sm:pt-5 lg:px-6">
-          <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
+        <main className="flex-1 px-6 pb-20 pt-10 sm:px-10 sm:pb-24 sm:pt-12 lg:px-14">
+          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-10">
             {children}
           </div>
         </main>

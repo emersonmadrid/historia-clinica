@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
+import { fireAndForgetAudit } from '@/lib/audit'
 import bcrypt from 'bcryptjs'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -13,23 +14,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log('[auth] missing credentials')
           return null
         }
 
-        let user
-        try {
-          user = await prisma.user.findUnique({
-            where: { email: credentials.email as string },
-          })
-          console.log('[auth] user found:', !!user, 'active:', user?.active)
-        } catch (e) {
-          console.error('[auth] DB error:', e)
-          return null
-        }
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email as string },
+        })
 
         if (!user || !user.active) {
-          console.log('[auth] user not found or inactive')
           return null
         }
 
@@ -37,10 +29,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           credentials.password as string,
           user.password
         )
-        console.log('[auth] password valid:', isPasswordValid)
 
         if (!isPasswordValid) {
           return null
+        }
+
+        if (user.organizationId) {
+          fireAndForgetAudit({
+            organizationId: user.organizationId,
+            actorUserId: user.id,
+            action: 'LOGIN_SUCCEEDED',
+            entityType: 'user',
+            entityId: user.id,
+            metadata: { email: user.email, role: user.role },
+          })
         }
 
         return {
@@ -48,7 +50,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           email: user.email,
           role: user.role,
+          organizationId: user.organizationId,
           speciality: user.speciality,
+          specialty: user.specialty,
         }
       },
     }),
@@ -58,7 +62,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id!
         token.role = user.role
+        token.organizationId = user.organizationId
         token.speciality = user.speciality
+        token.specialty = user.specialty
       }
       return token
     },
@@ -66,7 +72,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token) {
         session.user.id = token.id as string
         session.user.role = token.role
+        session.user.organizationId = token.organizationId as string | null | undefined
         session.user.speciality = token.speciality as string | null
+        session.user.specialty = token.specialty as never
       }
       return session
     },

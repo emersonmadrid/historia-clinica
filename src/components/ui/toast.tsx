@@ -25,16 +25,16 @@ type ToastVariant = 'default' | 'success' | 'error' | 'info'
 
 const variantStyles: Record<ToastVariant, string> = {
   default: 'bg-surface border-border text-foreground',
-  success: 'bg-surface border-green-200 text-foreground',
-  error: 'bg-surface border-red-200 text-foreground',
-  info: 'bg-surface border-sky-200 text-foreground',
+  success: 'bg-surface border-success/20 text-foreground',
+  error: 'bg-surface border-danger/20 text-foreground',
+  info: 'bg-surface border-primary/20 text-foreground',
 }
 
 const variantIcons: Record<ToastVariant, React.ReactNode> = {
   default: null,
-  success: <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />,
-  error: <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />,
-  info: <Info className="h-5 w-5 text-sky-500 shrink-0" />,
+  success: <CheckCircle className="h-5 w-5 text-success shrink-0" />,
+  error: <AlertCircle className="h-5 w-5 text-danger shrink-0" />,
+  info: <Info className="h-5 w-5 text-primary shrink-0" />,
 }
 
 interface ToastProps extends React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root> {
@@ -48,7 +48,7 @@ const Toast = React.forwardRef<React.ElementRef<typeof ToastPrimitive.Root>, Toa
     <ToastPrimitive.Root
       ref={ref}
       className={cn(
-        'pointer-events-auto flex w-full items-start gap-3 rounded-lg border p-4 shadow-lg',
+        'pointer-events-auto flex w-full items-start gap-3 rounded-[var(--radius)] border p-4 shadow-[var(--shadow-elevated)]',
         'data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom-2',
         'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
         variantStyles[variant],

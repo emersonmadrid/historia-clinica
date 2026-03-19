@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { assertAuth, assertRole } from '@/lib/permissions'
+import { getActorContext } from '@/lib/authz'
+import { getRequestAuditContext, writeAuditLog } from '@/lib/audit'
 import { handleApiError, ConflictError } from '@/lib/errors'
 import { createUserSchema } from '@/features/users/schemas'
 import bcrypt from 'bcryptjs'
@@ -10,6 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const { searchParams } = new URL(request.url)
     const all = searchParams.get('all')
@@ -18,12 +21,13 @@ export async function GET(request: NextRequest) {
       // Return all users (for admin user management)
       assertRole(session, ['ADMIN'])
       const users = await prisma.user.findMany({
+        where: { organizationId: actor.organizationId },
         select: {
           id: true,
           name: true,
           email: true,
           role: true,
-          speciality: true,
+          specialty: true,
           active: true,
           createdAt: true,
         },
@@ -32,9 +36,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(users)
     }
 
-    // Default: return doctors list (for selects)
+    // Default: return doctors list (for selects), optionally filtered by specialty
+    const specialtyFilter = new URL(request.url).searchParams.get('specialty')
     const doctors = await prisma.user.findMany({
-      select: { id: true, name: true, speciality: true },
+      where: {
+        organizationId: actor.organizationId,
+        active: true,
+        role: 'DOCTOR',
+        ...(specialtyFilter && { specialty: specialtyFilter as never }),
+      },
+      select: { id: true, name: true, speciality: true, specialty: true },
       orderBy: { name: 'asc' },
     })
 
@@ -49,6 +60,7 @@ export async function POST(request: NextRequest) {
     const session = await auth()
     assertAuth(session)
     assertRole(session, ['ADMIN'])
+    const actor = await getActorContext(session)
 
     const body = await request.json()
     const parsed = createUserSchema.safeParse(body)
@@ -66,7 +78,7 @@ export async function POST(request: NextRequest) {
       where: { email: data.email },
     })
 
-    if (existing) {
+    if (existing?.organizationId === actor.organizationId) {
       throw new ConflictError('Ya existe un usuario con ese email')
     }
 
@@ -78,17 +90,29 @@ export async function POST(request: NextRequest) {
         email: data.email,
         password: hashedPassword,
         role: data.role,
-        speciality: data.speciality || null,
+        specialty: data.specialty ?? 'GENERAL_MEDICINE',
+        organizationId: actor.organizationId,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
-        speciality: true,
+        specialty: true,
         active: true,
         createdAt: true,
       },
+    })
+
+    const audit = getRequestAuditContext(request)
+    await writeAuditLog({
+      organizationId: actor.organizationId,
+      actorUserId: actor.userId,
+      action: 'USER_CREATED',
+      entityType: 'user',
+      entityId: user.id,
+      ...audit,
+      metadata: { role: user.role, email: user.email },
     })
 
     return NextResponse.json(user, { status: 201 })

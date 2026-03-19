@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { assertAuth } from '@/lib/permissions'
+import { getActorContext } from '@/lib/authz'
+import { getRequestAuditContext, writeAuditLog } from '@/lib/audit'
 import { handleApiError, NotFoundError } from '@/lib/errors'
 import { getPatientById } from '@/features/patients/queries'
 import { renderToBuffer, type DocumentProps } from '@react-pdf/renderer'
@@ -15,16 +17,20 @@ export async function GET(
   try {
     const session = await auth()
     assertAuth(session)
+    const actor = await getActorContext(session)
 
     const { id } = await params
 
-    const patient = await getPatientById(id)
+    const patient = await getPatientById(id, actor.organizationId)
     if (!patient) {
       throw new NotFoundError('Paciente no encontrado')
     }
 
     // Get organization name
-    const org = await prisma.organization.findFirst({ select: { name: true } })
+    const org = await prisma.organization.findUnique({
+      where: { id: actor.organizationId },
+      select: { name: true },
+    })
     const orgName = org?.name || 'Feliz Horizonte'
 
     const printDate = new Date().toLocaleDateString('es', {
@@ -80,6 +86,17 @@ export async function GET(
     })
 
     const buffer = await renderToBuffer(element as ReactElement<DocumentProps>)
+
+    const audit = getRequestAuditContext(_request)
+    await writeAuditLog({
+      organizationId: actor.organizationId,
+      actorUserId: actor.userId,
+      action: 'PATIENT_EXPORTED',
+      entityType: 'patient',
+      entityId: patient.id,
+      ...audit,
+      metadata: { format: 'pdf' },
+    })
 
     const lastName = patient.lastName.toLowerCase().replace(/\s+/g, '-')
 

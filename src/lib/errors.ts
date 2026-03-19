@@ -48,6 +48,13 @@ export function handleApiError(error: unknown): NextResponse {
       return NextResponse.json({ error: 'Ya existe un registro con ese valor' }, { status: 409 })
     }
   }
+  // Propagate upstream rate limit (e.g. Groq 429) as 429 to the client
+  if (error instanceof Error && error.message.startsWith('429 ')) {
+    return NextResponse.json(
+      { error: 'Servicio IA temporalmente no disponible. Intenta en unos minutos.' },
+      { status: 429 }
+    )
+  }
   console.error('[api-error]', error)
   return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
 }

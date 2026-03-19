@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, RefreshCw, AlertTriangle, Clock, ClipboardList, CheckCircle2 } from 'lucide-react'
+import { Loader2, RefreshCw, AlertTriangle, Sparkles } from 'lucide-react'
 
 interface Briefing {
   situation: string
@@ -22,8 +22,7 @@ export function PatientBriefing({ patientId, hasConsultations }: { patientId: st
     try {
       const res = await fetch(`/api/pacientes/${patientId}/briefing`)
       if (!res.ok) throw new Error()
-      const data = await res.json()
-      setBriefing(data)
+      setBriefing(await res.json())
       setLoaded(true)
     } catch {
       setError(true)
@@ -40,75 +39,55 @@ export function PatientBriefing({ patientId, hasConsultations }: { patientId: st
   if (!hasConsultations) return null
 
   return (
-    <section className="bg-surface">
-      <div className="flex items-start justify-between gap-3 border-b border-border px-3 py-2.5">
-        <p className="text-[11px] text-foreground-muted">
-          Apoyo de lectura. No reemplaza el criterio clínico.
-        </p>
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-alt)] px-4 py-2.5">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-[var(--primary)]" />
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">Resumen IA</p>
+        </div>
         {loaded && (
           <button
             onClick={load}
             disabled={loading}
-            className="flex items-center gap-1 text-[11px] text-foreground-muted transition-colors hover:text-foreground disabled:opacity-50"
+            className="text-[var(--foreground-subtle)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40"
           >
-            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
         )}
       </div>
 
-      {loading && !briefing && (
-        <div className="flex items-center gap-2 px-3 py-3 text-sm text-foreground-muted">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Analizando historial del paciente...
-        </div>
-      )}
+      <div className="p-4">
+        {loading && !briefing && (
+          <div className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-[var(--primary)]" />
+            Analizando historial...
+          </div>
+        )}
 
-      {error && !loading && (
-        <div className="flex items-center justify-between px-3 py-3">
-          <p className="text-sm text-foreground-muted">No se pudo generar el briefing.</p>
-          <button
-            onClick={load}
-            className="text-xs font-medium text-foreground hover:text-foreground-muted transition-colors"
-          >
-            Reintentar
+        {error && !loading && (
+          <button onClick={load} className="text-sm text-[var(--primary)] hover:underline">
+            Error al cargar — Reintentar
           </button>
-        </div>
-      )}
+        )}
 
-      {briefing && (
-        <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-          <div className="border-b border-border px-3 py-3 sm:col-span-2">
-            <div className="flex items-start gap-2">
-              <ClipboardList className="mt-0.5 h-4 w-4 shrink-0 text-foreground-subtle" />
-              <p className="text-sm text-foreground">{briefing.situation}</p>
-            </div>
-          </div>
-
-          <div className="px-3 py-3">
-            <p className="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-foreground-subtle">
-              <Clock className="h-3 w-3" /> Última visita
-            </p>
-            <p className="text-xs text-foreground-muted">{briefing.lastVisit}</p>
-          </div>
-
-          <div className="px-3 py-3">
-            <p className="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-foreground-subtle">
-              <CheckCircle2 className="h-3 w-3" /> Pendientes
-            </p>
-            <p className="text-xs text-foreground-muted">{briefing.pending || 'Sin pendientes identificados'}</p>
-          </div>
-
-          {briefing.alerts && (
-            <div className="border-t border-amber-200 bg-amber-50 px-3 py-3 sm:col-span-2">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                <p className="text-xs text-amber-800">{briefing.alerts}</p>
+        {briefing && (
+          <div className="space-y-3">
+            <p className="text-sm leading-relaxed text-[var(--foreground-muted)]">{briefing.situation}</p>
+            {briefing.pending && briefing.pending !== 'N/A' && (
+              <p className="text-sm text-[var(--foreground-subtle)]">
+                <span className="font-medium text-[var(--foreground-muted)]">Pendiente: </span>
+                {briefing.pending}
+              </p>
+            )}
+            {briefing.alerts && (
+              <div className="flex items-start gap-2 rounded-md border border-[var(--warning)]/20 bg-[var(--warning)]/5 px-3 py-2">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--warning)]" />
+                <p className="text-sm text-[var(--warning)]">{briefing.alerts}</p>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-    </section>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

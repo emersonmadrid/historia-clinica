@@ -1,29 +1,18 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
+import { getActorContext } from '@/lib/authz'
 import { getPatientWithFullHistory, extractActiveDiagnoses, extractRecentMedications } from '@/lib/data/patients'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import {
-  calculateAge,
-  formatDate,
-  formatDateTime,
-  bloodTypeLabel,
-  genderLabel,
-  maritalStatusLabel,
-  documentTypeLabel,
+  calculateAge, calculateDaysSince, formatDateTime, formatDate,
+  bloodTypeLabel, genderLabel, maritalStatusLabel, documentTypeLabel,
 } from '@/lib/utils'
 import {
-  ArrowLeft,
-  Heart,
-  Activity,
-  Thermometer,
-  Wind,
-  Droplets,
-  ShieldAlert,
-  Pill,
-  Pencil,
-  Plus,
+  ArrowLeft, Heart, Activity, Thermometer, Wind, Droplets,
+  ShieldAlert, Stethoscope, Calendar, Clock, AlertTriangle,
+  TrendingUp, FileText, Pill,
 } from 'lucide-react'
 import { PatientHeaderActions } from './PatientHeaderActions'
 import { PatientBriefing } from './PatientBriefing'
@@ -31,25 +20,65 @@ import { AllergyManager } from './AllergyManager'
 import { BackgroundManager } from './BackgroundManager'
 import { DocumentManager } from './DocumentManager'
 import { ConsultasTimeline } from './ConsultasTimeline'
+import { RiskBadge } from '@/components/shared/RiskBadge'
+import { ClinicalCalculatorsButton } from '@/components/shared/ClinicalCalculatorsButton'
+import { getVitalStatus, getCriticalVitals } from '@/lib/vitalSignsThresholds'
+import { calculatePatientRisk } from '@/lib/patientRisk'
+import type { VitalStatus } from '@/lib/vitalSignsThresholds'
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function VitalCard({ icon, label, value, unit = '', status = 'normal' }: {
+  icon: React.ReactNode; label: string; value: number | string
+  unit?: string; status?: VitalStatus
+}) {
+  const border = status === 'critical' ? 'border-[var(--danger)]/30 bg-[var(--danger)]/5'
+    : status === 'warning' ? 'border-[var(--warning)]/30 bg-[var(--warning)]/5'
+    : 'border-[var(--border)] bg-[var(--surface-alt)]'
+  const valueColor = status === 'critical' ? 'text-[var(--danger)]'
+    : status === 'warning' ? 'text-[var(--warning)]'
+    : 'text-[var(--foreground)]'
+  return (
+    <div className={`rounded-lg border p-3 ${border}`}>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--foreground-subtle)]">{label}</span>
+        <span className="text-[var(--foreground-subtle)]">{icon}</span>
+      </div>
+      <p className={`font-mono text-lg font-semibold tabular-nums leading-none ${valueColor}`}>
+        {value}<span className="text-xs font-normal ml-0.5">{unit}</span>
+      </p>
+      {status !== 'normal' && (
+        <p className={`mt-1 text-[10px] font-medium ${status === 'critical' ? 'text-[var(--danger)]' : 'text-[var(--warning)]'}`}>
+          {status === 'critical' ? '⚠ Crítico' : '⚠ Atención'}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function Card({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-lg border border-[var(--border)] bg-[var(--surface)] overflow-hidden ${className}`}>
+      <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-alt)] px-4 py-2.5">
+        <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">{title}</p>
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  )
+}
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-xs font-medium uppercase tracking-wide text-foreground-subtle">{label}</span>
-      <span className="text-sm text-foreground">{value || <span className="text-foreground-subtle">—</span>}</span>
+    <div className="flex items-baseline justify-between gap-4 py-1.5 border-b border-[var(--border-subtle)] last:border-0">
+      <span className="text-xs text-[var(--foreground-subtle)] shrink-0">{label}</span>
+      <span className="text-xs text-right font-medium text-[var(--foreground)]">
+        {value || <span className="font-normal text-[var(--foreground-subtle)]">—</span>}
+      </span>
     </div>
   )
 }
 
-function VitalChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
-  return (
-    <div className="inline-flex min-w-[96px] items-center gap-2 border border-border bg-surface px-2 py-1 text-[11px] font-medium text-foreground-muted">
-      {icon}
-      <span>{label}</span>
-      <span className="font-semibold text-foreground">{value}</span>
-    </div>
-  )
-}
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function PatientPage({
   params,
@@ -62,284 +91,317 @@ export default async function PatientPage({
   const sp = await searchParams
   const activeTab = sp.tab ?? 'resumen'
 
-  const [patient, session] = await Promise.all([
-    getPatientWithFullHistory(id),
-    auth(),
-  ])
+  const session = await auth()
+  const actor = await getActorContext(session)
+  const patient = await getPatientWithFullHistory(id, actor.organizationId)
 
   if (!patient) notFound()
 
-  const doctorId = session?.user?.id ?? ''
   const age = calculateAge(patient.birthDate)
+  const now = new Date()
+
   const uniqueAllergies = patient.allergies.filter(
-    (allergy, index, list) => list.findIndex((item) => item.allergen === allergy.allergen) === index
+    (a, idx, list) => list.findIndex(x => x.allergen === a.allergen) === idx
   )
-  const severeAllergies = uniqueAllergies.filter((allergy) => allergy.severity === 'SEVERE')
+  const severeAllergies = uniqueAllergies.filter(a => a.severity === 'SEVERE')
   const activeDiagnoses = extractActiveDiagnoses(patient.clinicalRecords)
   const recentMedications = extractRecentMedications(patient.clinicalRecords)
-  const lastVitalSigns = patient.clinicalRecords.find((record) => record.vitalSigns)?.vitalSigns ?? null
-  const nextAppointment = patient.appointments[0] ?? null
+  const lastPrescriptionDate = patient.clinicalRecords
+    .flatMap(r => r.prescriptions)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.createdAt ?? null
+  const lastVitalRecord = patient.clinicalRecords.find(r => r.vitalSigns) ?? null
+  const lastVitalSigns = lastVitalRecord?.vitalSigns ?? null
+  const lastVitalDate = lastVitalRecord?.date ?? null
+
   const todayStr = new Date().toDateString()
   const todayPendingApt = patient.appointments.find(
-    (appointment) =>
-      new Date(appointment.dateTime).toDateString() === todayStr &&
-      (appointment.status === 'SCHEDULED' || appointment.status === 'CONFIRMED')
+    a => new Date(a.dateTime).toDateString() === todayStr && (a.status === 'SCHEDULED' || a.status === 'CONFIRMED')
   )
   const consultaHref = `/pacientes/${patient.id}/historia/nueva-consulta${todayPendingApt ? `?citaId=${todayPendingApt.id}` : ''}`
+  const nextAppointment = patient.appointments[0] ?? null
+
+  const chronicDiagnosesCount = activeDiagnoses.filter(d => d.status === 'CHRONIC').length
+  const daysSinceLastVisit = patient.clinicalRecords.length > 0
+    ? calculateDaysSince(patient.clinicalRecords[0].date, now)
+    : null
+  const followUpOverdueDays = chronicDiagnosesCount >= 3 ? 60 : chronicDiagnosesCount >= 1 ? 90 : 180
+  const isFollowUpOverdue = daysSinceLastVisit !== null && daysSinceLastVisit > followUpOverdueDays
+
+  const risk = calculatePatientRisk({
+    age, activeDiagnosesCount: activeDiagnoses.length, chronicDiagnosesCount,
+    severeAllergiesCount: severeAllergies.length,
+    lastVitalSigns: lastVitalSigns ? {
+      bloodPressureSys: lastVitalSigns.bloodPressureSys, bloodPressureDia: lastVitalSigns.bloodPressureDia,
+      heartRate: lastVitalSigns.heartRate, temperature: lastVitalSigns.temperature,
+      oxygenSat: lastVitalSigns.oxygenSat, glucoseLevel: lastVitalSigns.glucoseLevel,
+    } : null,
+    daysSinceLastVisit,
+  })
+
+  const criticalVitals = lastVitalSigns ? getCriticalVitals({
+    bloodPressureSys: lastVitalSigns.bloodPressureSys, bloodPressureDia: lastVitalSigns.bloodPressureDia,
+    heartRate: lastVitalSigns.heartRate, temperature: lastVitalSigns.temperature,
+    oxygenSat: lastVitalSigns.oxygenSat, glucoseLevel: lastVitalSigns.glucoseLevel,
+  }) : []
+
   const uniqueBackgrounds = patient.medicalBackgrounds.filter(
-    (background, index, list) =>
-      list.findIndex((item) => item.description === background.description && item.type === background.type) === index
+    (b, idx, list) => list.findIndex(x => x.description === b.description && x.type === b.type) === idx
   )
-  const tabsIdBase = `patient-tabs-${patient.id}`
 
   return (
     <div className="space-y-4">
-      <section className="overflow-hidden border border-border bg-surface">
-        <div className="border-b border-border bg-surface-alt px-3 py-2.5 sm:px-4">
-          <div className="flex items-center gap-2 text-xs text-foreground-muted">
-            <Button variant="ghost" size="icon" asChild className="hidden sm:flex">
-              <Link href="/pacientes">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-            <span>Paciente</span>
-          </div>
+
+      {/* ── Identidad del paciente ─────────────────────────────────────────── */}
+      <div className="panel overflow-hidden">
+
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] px-4 py-2.5">
+          <Button variant="ghost" size="icon" asChild className="h-7 w-7">
+            <Link href="/pacientes"><ArrowLeft className="h-3.5 w-3.5" /></Link>
+          </Button>
+          <span className="text-xs text-[var(--foreground-subtle)]">Pacientes /</span>
+          <span className="text-xs font-medium text-[var(--foreground)]">{patient.firstName} {patient.lastName}</span>
         </div>
 
-        <div className="p-3 sm:p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">
+        {/* Datos del paciente + acciones */}
+        <div className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl font-semibold text-[var(--foreground)]">
                 {patient.firstName} {patient.lastName}
               </h1>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground-muted sm:text-sm">
-                <span>{documentTypeLabel(patient.documentType)}: {patient.documentNumber}</span>
-                <span className="text-border" aria-hidden>•</span>
-                <span>{age} años</span>
-                <span className="text-border" aria-hidden>•</span>
-                <span>{genderLabel(patient.gender)}</span>
-                {patient.bloodType && (
-                  <>
-                    <span className="text-border" aria-hidden>•</span>
-                    <span>{bloodTypeLabel(patient.bloodType)}</span>
-                  </>
-                )}
-                {nextAppointment && (
-                  <>
-                    <span className="text-border" aria-hidden>•</span>
-                    <span>Próxima cita: {formatDateTime(nextAppointment.dateTime)}</span>
-                  </>
-                )}
-                {severeAllergies.length > 0 && (
-                  <>
-                    <span className="text-border" aria-hidden>•</span>
-                    <span className="font-medium text-danger">{severeAllergies.length} alerta(s) crítica(s)</span>
-                  </>
-                )}
-              </div>
+              <RiskBadge level={risk.level} reasons={risk.reasons} />
             </div>
 
-            <div className="flex w-full flex-col gap-3 lg:w-auto lg:min-w-[220px]">
-              <PatientHeaderActions
-                patientId={patient.id}
-                patientName={`${patient.firstName} ${patient.lastName}`}
-                consultaHref={consultaHref}
-                doctorId={doctorId}
-              />
+            {/* Píldoras de información clave */}
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1 rounded-md bg-[var(--surface-alt)] border border-[var(--border)] px-2.5 py-1 text-xs font-medium text-[var(--foreground-muted)]">
+                {age} años · {genderLabel(patient.gender)}
+              </span>
+              {patient.bloodType && (
+                <span className="inline-flex items-center rounded-md bg-[var(--primary-subtle)] border border-[var(--primary)]/20 px-2.5 py-1 text-xs font-semibold text-[var(--primary)]">
+                  {bloodTypeLabel(patient.bloodType)}
+                </span>
+              )}
+              {severeAllergies.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-[var(--danger)]/8 border border-[var(--danger)]/20 px-2.5 py-1 text-xs font-semibold text-[var(--danger)]">
+                  <ShieldAlert className="h-3 w-3" />
+                  Alergia: {severeAllergies.map(a => a.allergen).join(', ')}
+                </span>
+              )}
+              {daysSinceLastVisit !== null && (
+                <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs ${
+                  isFollowUpOverdue
+                    ? 'bg-[var(--warning)]/8 border-[var(--warning)]/20 font-medium text-[var(--warning)]'
+                    : 'bg-[var(--surface-alt)] border-[var(--border)] text-[var(--foreground-subtle)]'
+                }`}>
+                  <Clock className="mr-1 h-3 w-3" />
+                  {daysSinceLastVisit === 0 ? 'Consulta hoy' : `Última visita hace ${daysSinceLastVisit}d`}
+                </span>
+              )}
             </div>
+          </div>
+
+          {/* Acciones */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button asChild size="sm">
+              <Link href={consultaHref}>
+                <Stethoscope className="mr-1.5 h-4 w-4" />
+                Atender
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/citas/nueva?patientId=${patient.id}`}>
+                <Calendar className="mr-1.5 h-4 w-4" />
+                Agendar
+              </Link>
+            </Button>
+            <PatientHeaderActions
+              patientId={patient.id}
+              patientName={`${patient.firstName} ${patient.lastName}`}
+            />
           </div>
         </div>
-      </section>
 
-      {severeAllergies.length > 0 && (
-        <section className="border border-danger/20 bg-danger/5 px-4 py-3 sm:px-5">
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
-            <div>
-              <p className="text-sm font-semibold text-danger">Alergias severas registradas</p>
-              <p className="mt-1 text-sm text-danger">
-                {severeAllergies.map((allergy) => allergy.allergen).join(', ')}
-              </p>
+        {/* Alertas críticas — dentro del header, solo si hay algo */}
+        {criticalVitals.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[var(--danger)]/20 bg-[var(--danger)]/5 px-5 py-2.5">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[var(--danger)]" />
+              <span className="text-xs font-semibold text-[var(--danger)]">Signos fuera de rango:</span>
             </div>
+            {criticalVitals.map(v => (
+              <span key={v.key} className={`text-xs font-medium ${v.status === 'critical' ? 'text-[var(--danger)]' : 'text-[var(--warning)]'}`}>
+                {v.label} {v.value}{v.unit}
+              </span>
+            ))}
           </div>
-        </section>
-      )}
+        )}
+      </div>
 
-      <div className="space-y-6">
+      {/* ── Navegación principal: tabs a pantalla completa ────────────────── */}
+      <div className="panel overflow-hidden">
         <Tabs defaultValue={activeTab}>
-            <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-none border border-border bg-surface p-0">
-              <TabsTrigger
-                value="resumen"
-                id={`${tabsIdBase}-trigger-resumen`}
-                aria-controls={`${tabsIdBase}-content-resumen`}
-                className="min-w-fit rounded-none border-r border-border px-4 py-2.5"
-              >
-                Resumen
-              </TabsTrigger>
-              <TabsTrigger
-                value="consultas"
-                id={`${tabsIdBase}-trigger-consultas`}
-                aria-controls={`${tabsIdBase}-content-consultas`}
-                className="min-w-fit rounded-none border-r border-border px-4 py-2.5"
-              >
-                Consultas ({patient.clinicalRecords.length})
-              </TabsTrigger>
-              <TabsTrigger
-                value="antecedentes"
-                id={`${tabsIdBase}-trigger-antecedentes`}
-                aria-controls={`${tabsIdBase}-content-antecedentes`}
-                className="min-w-fit rounded-none border-r border-border px-4 py-2.5"
-              >
-                Antecedentes ({uniqueBackgrounds.length})
-              </TabsTrigger>
-              <TabsTrigger
-                value="documentos"
-                id={`${tabsIdBase}-trigger-documentos`}
-                aria-controls={`${tabsIdBase}-content-documentos`}
-                className="ml-auto min-w-fit rounded-none border-l border-border px-4 py-2.5"
-              >
-                Documentos ({patient.documents.length})
-              </TabsTrigger>
-              <TabsTrigger
-                value="perfil"
-                id={`${tabsIdBase}-trigger-perfil`}
-                aria-controls={`${tabsIdBase}-content-perfil`}
-                className="min-w-fit rounded-none px-4 py-2.5"
-              >
-                Perfil
-              </TabsTrigger>
-            </TabsList>
 
-            <TabsContent
-              value="resumen"
-              id={`${tabsIdBase}-content-resumen`}
-              aria-labelledby={`${tabsIdBase}-trigger-resumen`}
-              className="mt-4 space-y-6"
-            >
-              <section className="overflow-hidden border border-border bg-surface">
-                <div className="border-b border-border bg-surface-alt px-3 py-2.5">
-                  <h2 className="text-[13px] font-semibold text-foreground">Estado clínico actual</h2>
+          <TabsList>
+            <TabsTrigger value="resumen">Resumen</TabsTrigger>
+            <TabsTrigger value="historia">
+              Historia
+              {patient.clinicalRecords.length > 0 && (
+                <span className="ml-1.5 text-[11px] opacity-60">({patient.clinicalRecords.length})</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="antecedentes">Antecedentes</TabsTrigger>
+            <TabsTrigger value="documentos">
+              Documentos
+              {patient.documents.length > 0 && (
+                <span className="ml-1.5 text-[11px] opacity-60">({patient.documents.length})</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="perfil">Perfil</TabsTrigger>
+          </TabsList>
+
+          {/* ── RESUMEN ─────────────────────────────────────────────────────── */}
+          <TabsContent value="resumen" className="p-5">
+            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+
+              {/* Resumen IA — ocupa todo el ancho en mobile, 2 cols en xl */}
+              <div className="lg:col-span-2 xl:col-span-2">
+                <PatientBriefing patientId={patient.id} hasConsultations={patient.clinicalRecords.length > 0} />
+              </div>
+
+              {/* Signos vitales */}
+              {lastVitalSigns ? (
+                <Card
+                  title={`Signos vitales · ${lastVitalDate ? formatDate(lastVitalDate) : ''}`}
+                  className="lg:col-span-2 xl:col-span-1"
+                >
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
+                    {lastVitalSigns.bloodPressureSys && lastVitalSigns.bloodPressureDia && (
+                      <VitalCard icon={<Heart className="h-3.5 w-3.5" />} label="Presión art."
+                        value={`${lastVitalSigns.bloodPressureSys}/${lastVitalSigns.bloodPressureDia}`} unit="mmHg"
+                        status={getVitalStatus('bloodPressureSys', lastVitalSigns.bloodPressureSys)} />
+                    )}
+                    {lastVitalSigns.heartRate && (
+                      <VitalCard icon={<Activity className="h-3.5 w-3.5" />} label="Frec. cardíaca"
+                        value={lastVitalSigns.heartRate} unit="lpm"
+                        status={getVitalStatus('heartRate', lastVitalSigns.heartRate)} />
+                    )}
+                    {lastVitalSigns.temperature && (
+                      <VitalCard icon={<Thermometer className="h-3.5 w-3.5" />} label="Temperatura"
+                        value={lastVitalSigns.temperature} unit="°C"
+                        status={getVitalStatus('temperature', lastVitalSigns.temperature)} />
+                    )}
+                    {lastVitalSigns.oxygenSat && (
+                      <VitalCard icon={<Wind className="h-3.5 w-3.5" />} label="SpO₂"
+                        value={lastVitalSigns.oxygenSat} unit="%"
+                        status={getVitalStatus('oxygenSat', lastVitalSigns.oxygenSat)} />
+                    )}
+                    {lastVitalSigns.glucoseLevel && (
+                      <VitalCard icon={<Droplets className="h-3.5 w-3.5" />} label="Glucosa"
+                        value={lastVitalSigns.glucoseLevel} unit="mg/dL"
+                        status={getVitalStatus('glucoseLevel', lastVitalSigns.glucoseLevel)} />
+                    )}
+                    {lastVitalSigns.weight && (
+                      <VitalCard icon={<TrendingUp className="h-3.5 w-3.5" />} label="Peso"
+                        value={lastVitalSigns.weight} unit="kg" />
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    <ClinicalCalculatorsButton
+                      age={age} sex={patient.gender}
+                      weightKg={lastVitalSigns?.weight} heightCm={lastVitalSigns?.height}
+                      sbp={lastVitalSigns?.bloodPressureSys} dbp={lastVitalSigns?.bloodPressureDia}
+                      rr={lastVitalSigns?.respiratoryRate}
+                    />
+                  </div>
+                </Card>
+              ) : (
+                <Card title="Signos vitales">
+                  <p className="text-sm text-[var(--foreground-subtle)]">Sin registros aún.</p>
+                </Card>
+              )}
+
+              {/* Diagnósticos activos */}
+              <Card title={`Diagnósticos activos · ${activeDiagnoses.length}`}>
+                {activeDiagnoses.length === 0 ? (
+                  <p className="text-sm text-[var(--foreground-subtle)]">Sin diagnósticos activos.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {activeDiagnoses.slice(0, 5).map(dx => (
+                      <div key={dx.id} className="flex items-start gap-2.5">
+                        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dx.status === 'CHRONIC' ? 'bg-[var(--warning)]' : 'bg-[var(--primary)]'}`} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm leading-snug text-[var(--foreground)]">{dx.description}</p>
+                            {dx.status === 'CHRONIC' && (
+                              <span className="shrink-0 rounded bg-[var(--warning)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--warning)]">Crónico</span>
+                            )}
+                          </div>
+                          {dx.code && <p className="text-[11px] text-[var(--foreground-subtle)]">{dx.code}</p>}
+                        </div>
+                      </div>
+                    ))}
+                    {activeDiagnoses.length > 5 && (
+                      <p className="text-xs text-[var(--foreground-subtle)]">+{activeDiagnoses.length - 5} más</p>
+                    )}
+                  </div>
+                )}
+              </Card>
+
+              {/* Medicación actual */}
+              <Card title={`Medicación · ${recentMedications.length}${lastPrescriptionDate ? ` · ${formatDate(lastPrescriptionDate)}` : ''}`}>
+                {recentMedications.length === 0 ? (
+                  <p className="text-sm text-[var(--foreground-subtle)]">Sin medicación registrada.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {recentMedications.slice(0, 4).map(med => (
+                      <div key={med.id} className="flex items-start gap-2">
+                        <Pill className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--foreground-subtle)]" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-[var(--foreground)]">{med.medication}</p>
+                          <p className="text-xs text-[var(--foreground-subtle)]">{med.dosage} · {med.frequency}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {recentMedications.length > 4 && (
+                      <p className="text-xs text-[var(--foreground-subtle)]">+{recentMedications.length - 4} más</p>
+                    )}
+                  </div>
+                )}
+              </Card>
+
+              {/* Próxima cita — al final, es info administrativa */}
+              {nextAppointment && (
+                <div className="lg:col-span-2 xl:col-span-3 flex items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-alt)] px-4 py-3">
+                  <Calendar className="h-4 w-4 shrink-0 text-[var(--foreground-subtle)]" />
+                  <span className="text-xs text-[var(--foreground-subtle)]">Próxima cita:</span>
+                  <span className="text-xs font-medium text-[var(--foreground-muted)]">{formatDateTime(nextAppointment.dateTime)}</span>
+                  {nextAppointment.reason && <span className="text-xs text-[var(--foreground-subtle)]">· {nextAppointment.reason}</span>}
                 </div>
-                <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-                  <div className="border-b border-border lg:border-b-0 lg:border-r">
-                    <div className="border-b border-border px-3 py-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-foreground-subtle">Diagnósticos activos</p>
-                    </div>
-                    <div className="px-3 py-3">
-                      {activeDiagnoses.length > 0 ? (
-                        <div className="space-y-2">
-                          {activeDiagnoses.slice(0, 4).map((diagnosis) => (
-                            <div key={diagnosis.id} className="border-l-2 border-primary pl-2.5">
-                              <p className="text-[13px] font-medium text-foreground">{diagnosis.description}</p>
-                              <p className="text-[11px] text-foreground-muted">{diagnosis.code} · {diagnosis.status}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-foreground-muted">Sin diagnósticos activos.</p>
-                      )}
-                    </div>
+              )}
 
-                    <div className="border-y border-border px-3 py-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-foreground-subtle">Medicación reciente</p>
-                    </div>
-                    <div className="px-3 py-3">
-                      {recentMedications.length > 0 ? (
-                        <div className="space-y-2">
-                          {recentMedications.slice(0, 4).map((medication) => (
-                            <div key={medication.id} className="border-l-2 border-border-interactive pl-2.5">
-                              <p className="text-[13px] font-medium text-foreground">{medication.medication}</p>
-                              <p className="text-[11px] text-foreground-muted">{medication.dosage} · {medication.frequency}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-foreground-muted">Sin medicación registrada.</p>
-                      )}
-                    </div>
-                  </div>
+            </div>
+          </TabsContent>
 
-                  <div>
-                    <div className="border-b border-border px-3 py-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-foreground-subtle">Últimos signos vitales</p>
-                    </div>
-                    <div className="px-3 py-3">
-                      {lastVitalSigns ? (
-                        <div className="flex flex-wrap gap-2">
-                          {lastVitalSigns.bloodPressureSys && lastVitalSigns.bloodPressureDia && (
-                            <VitalChip icon={<Heart className="h-3.5 w-3.5 text-foreground-subtle" />} label="PA" value={`${lastVitalSigns.bloodPressureSys}/${lastVitalSigns.bloodPressureDia}`} />
-                          )}
-                          {lastVitalSigns.heartRate && (
-                            <VitalChip icon={<Activity className="h-3.5 w-3.5 text-foreground-subtle" />} label="FC" value={lastVitalSigns.heartRate} />
-                          )}
-                          {lastVitalSigns.temperature && (
-                            <VitalChip icon={<Thermometer className="h-3.5 w-3.5 text-foreground-subtle" />} label="Temp" value={`${lastVitalSigns.temperature}°C`} />
-                          )}
-                          {lastVitalSigns.oxygenSat && (
-                            <VitalChip icon={<Wind className="h-3.5 w-3.5 text-foreground-subtle" />} label="SpO2" value={`${lastVitalSigns.oxygenSat}%`} />
-                          )}
-                          {lastVitalSigns.glucoseLevel && (
-                            <VitalChip icon={<Droplets className="h-3.5 w-3.5 text-foreground-subtle" />} label="Glucosa" value={lastVitalSigns.glucoseLevel} />
-                          )}
-                          {lastVitalSigns.weight && (
-                            <VitalChip icon={<Pill className="h-3.5 w-3.5 text-foreground-subtle" />} label="Peso" value={`${lastVitalSigns.weight} kg`} />
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-foreground-muted">Aún no hay signos vitales registrados.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <details className="overflow-hidden border border-border bg-surface">
-                <summary className="cursor-pointer list-none border-b border-border bg-surface-alt px-3 py-2.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[13px] font-semibold text-foreground">Resumen asistido</p>
-                      <p className="mt-0.5 text-[11px] text-foreground-muted">
-                        Sintesis del historial y pendientes del paciente.
-                      </p>
-                    </div>
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-foreground-subtle">
-                      Ver
-                    </span>
-                  </div>
-                </summary>
-                <PatientBriefing
-                  patientId={patient.id}
-                  hasConsultations={patient.clinicalRecords.length > 0}
-                />
-              </details>
-            </TabsContent>
-
-            <TabsContent
-              value="consultas"
-              id={`${tabsIdBase}-content-consultas`}
-              aria-labelledby={`${tabsIdBase}-trigger-consultas`}
-              className="mt-4 space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-foreground-muted">{patient.clinicalRecords.length} consulta(s) registradas</p>
-                <Button size="sm" asChild>
-                  <Link href={consultaHref}>
-                    <Plus className="mr-1.5 h-4 w-4" />
-                    Nueva Consulta
-                  </Link>
+          {/* ── HISTORIA ────────────────────────────────────────────────────── */}
+          <TabsContent value="historia" className="p-5">
+            {patient.clinicalRecords.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <FileText className="h-10 w-10 text-[var(--border)]" />
+                <p className="mt-3 text-sm font-medium text-[var(--foreground-muted)]">Sin historial clínico</p>
+                <p className="mt-1 text-xs text-[var(--foreground-subtle)]">Esta es la primera consulta del paciente.</p>
+                <Button size="sm" asChild className="mt-5 gap-1.5">
+                  <Link href={consultaHref}><Stethoscope className="h-4 w-4" /> Iniciar primera consulta</Link>
                 </Button>
               </div>
+            ) : (
               <ConsultasTimeline
                 patientId={patient.id}
-                records={patient.clinicalRecords.map((record) => ({
-                  id: record.id,
-                  date: record.date.toISOString(),
-                  reason: record.reason,
-                  subjective: record.subjective,
-                  objective: record.objective,
-                  assessment: record.assessment,
-                  plan: record.plan,
-                  notes: record.notes,
+                records={patient.clinicalRecords.map(record => ({
+                  id: record.id, date: record.date.toISOString(), reason: record.reason,
+                  subjective: record.subjective, objective: record.objective,
+                  assessment: record.assessment, plan: record.plan, notes: record.notes,
                   doctor: record.doctor,
                   vitalSigns: record.vitalSigns ? {
                     bloodPressureSys: record.vitalSigns.bloodPressureSys,
@@ -353,132 +415,98 @@ export default async function PatientPage({
                     glucoseLevel: record.vitalSigns.glucoseLevel,
                     respiratoryRate: record.vitalSigns.respiratoryRate,
                   } : null,
+                  noteTemplate: record.noteTemplate,
                   diagnoses: record.diagnoses,
-                  prescriptions: record.prescriptions.map((prescription) => ({
-                    id: prescription.id,
-                    notes: prescription.notes,
-                    createdAt: prescription.createdAt.toISOString(),
-                    doctor: prescription.doctor,
-                    items: prescription.items.map((item) => ({
-                      id: item.id,
-                      medication: item.medication,
-                      dosage: item.dosage,
-                      frequency: item.frequency,
-                      duration: item.duration,
-                      quantity: item.quantity,
-                      instructions: item.instructions,
+                  prescriptions: record.prescriptions.map(rx => ({
+                    id: rx.id, notes: rx.notes, createdAt: rx.createdAt.toISOString(), doctor: rx.doctor,
+                    items: rx.items.map(item => ({
+                      id: item.id, medication: item.medication, dosage: item.dosage,
+                      frequency: item.frequency, duration: item.duration,
+                      quantity: item.quantity, instructions: item.instructions,
                     })),
                   })),
                 }))}
               />
-            </TabsContent>
+            )}
+          </TabsContent>
 
-            <TabsContent
-              value="antecedentes"
-              id={`${tabsIdBase}-content-antecedentes`}
-              aria-labelledby={`${tabsIdBase}-trigger-antecedentes`}
-              className="mt-4"
-            >
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                <section className="overflow-hidden border border-border bg-surface">
-                  <div className="border-b border-border bg-surface-alt px-3 py-2.5">
-                    <h2 className="text-[13px] font-semibold text-foreground">Antecedentes médicos</h2>
+          {/* ── ANTECEDENTES ────────────────────────────────────────────────── */}
+          <TabsContent value="antecedentes" className="p-5">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Card title="Antecedentes médicos">
+                <BackgroundManager
+                  patientId={patient.id}
+                  backgrounds={uniqueBackgrounds.map(b => ({
+                    id: b.id, type: b.type, description: b.description,
+                    date: b.date ? b.date.toISOString() : null, notes: b.notes,
+                  }))}
+                />
+              </Card>
+              <Card title="Alergias">
+                <AllergyManager
+                  patientId={patient.id}
+                  allergies={patient.allergies.map(a => ({
+                    id: a.id, allergen: a.allergen, reaction: a.reaction, severity: a.severity, notes: a.notes,
+                  }))}
+                />
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* ── DOCUMENTOS ──────────────────────────────────────────────────── */}
+          <TabsContent value="documentos" className="p-5">
+            <Card title="Documentos clínicos">
+              <DocumentManager
+                patientId={patient.id}
+                documents={patient.documents.map(doc => ({
+                  id: doc.id, name: doc.name, description: doc.description,
+                  fileUrl: doc.fileUrl, fileSize: doc.fileSize, mimeType: doc.mimeType,
+                  createdAt: doc.createdAt.toISOString(), uploadedBy: doc.uploadedBy,
+                }))}
+              />
+            </Card>
+          </TabsContent>
+
+          {/* ── PERFIL ──────────────────────────────────────────────────────── */}
+          <TabsContent value="perfil" className="p-5">
+            <div className="grid gap-4 lg:grid-cols-2">
+
+              <Card title="Datos personales">
+                <InfoRow label="Estado civil" value={patient.maritalStatus ? maritalStatusLabel(patient.maritalStatus) : null} />
+                <InfoRow label="Ocupación" value={patient.occupation} />
+                <InfoRow label="Documento" value={`${documentTypeLabel(patient.documentType)} ${patient.documentNumber}`} />
+                <InfoRow label="N° seguro" value={patient.insuranceNumber} />
+              </Card>
+
+              <Card title="Contacto">
+                <InfoRow label="Teléfono" value={patient.phone} />
+                <InfoRow label="Email" value={patient.email} />
+                <InfoRow label="Dirección" value={patient.address} />
+                <InfoRow label="Ciudad" value={patient.city} />
+              </Card>
+
+              {(patient.emergencyContactName || patient.emergencyContactPhone) && (
+                <Card title="Contacto de emergencia" className="lg:col-span-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8">
+                    <InfoRow label="Nombre" value={patient.emergencyContactName} />
+                    <InfoRow label="Teléfono" value={patient.emergencyContactPhone} />
+                    <InfoRow label="Relación" value={patient.emergencyContactRel} />
                   </div>
-                  <div className="px-3 py-4">
-                    <BackgroundManager
-                      patientId={patient.id}
-                      backgrounds={uniqueBackgrounds.map((background) => ({
-                        id: background.id,
-                        type: background.type,
-                        description: background.description,
-                        date: background.date ? background.date.toISOString() : null,
-                        notes: background.notes,
-                      }))}
-                    />
-                  </div>
-                </section>
+                </Card>
+              )}
 
-                <section className="overflow-hidden border border-border bg-surface">
-                  <div className="border-b border-border bg-surface-alt px-3 py-2.5">
-                    <h2 className="text-[13px] font-semibold text-foreground">Alergias</h2>
-                  </div>
-                  <div className="px-3 py-4">
-                    <AllergyManager
-                      patientId={patient.id}
-                      allergies={patient.allergies.map((allergy) => ({
-                        id: allergy.id,
-                        allergen: allergy.allergen,
-                        reaction: allergy.reaction,
-                        severity: allergy.severity,
-                        notes: allergy.notes,
-                      }))}
-                    />
-                  </div>
-                </section>
-              </div>
-            </TabsContent>
+              {patient.notes && (
+                <Card title="Notas clínicas" className="lg:col-span-2">
+                  <p className="text-sm text-[var(--foreground-muted)]">{patient.notes}</p>
+                </Card>
+              )}
 
-            <TabsContent
-              value="documentos"
-              id={`${tabsIdBase}-content-documentos`}
-              aria-labelledby={`${tabsIdBase}-trigger-documentos`}
-              className="mt-4"
-            >
-              <section className="overflow-hidden border border-border bg-surface">
-                <div className="border-b border-border bg-surface-alt px-3 py-2.5">
-                  <h2 className="text-[13px] font-semibold text-foreground">Documentos clínicos</h2>
-                </div>
-                <div className="px-3 py-4">
-                  <DocumentManager
-                    patientId={patient.id}
-                    documents={patient.documents.map((document) => ({
-                      id: document.id,
-                      name: document.name,
-                      description: document.description,
-                      fileUrl: document.fileUrl,
-                      fileSize: document.fileSize,
-                      mimeType: document.mimeType,
-                      createdAt: document.createdAt.toISOString(),
-                      uploadedBy: document.uploadedBy,
-                    }))}
-                  />
-                </div>
-              </section>
-            </TabsContent>
+            </div>
+          </TabsContent>
 
-            <TabsContent
-              value="perfil"
-              id={`${tabsIdBase}-content-perfil`}
-              aria-labelledby={`${tabsIdBase}-trigger-perfil`}
-              className="mt-4 space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-foreground-muted">Información registrada del paciente</p>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/pacientes/${patient.id}/editar`}>
-                    <Pencil className="mr-1.5 h-4 w-4" />
-                    Editar perfil
-                  </Link>
-                </Button>
-              </div>
-
-              <section className="overflow-hidden border border-border bg-surface">
-                <div className="border-b border-border bg-surface-alt px-3 py-2.5">
-                  <h2 className="text-[13px] font-semibold text-foreground">Identidad</h2>
-                </div>
-                <div className="grid grid-cols-2 gap-4 px-3 py-4 sm:grid-cols-3">
-                  <InfoRow label="Nombre Completo" value={`${patient.firstName} ${patient.lastName}`} />
-                  <InfoRow label="Fecha de Nacimiento" value={`${formatDate(patient.birthDate)} (${age} años)`} />
-                  <InfoRow label="Género" value={genderLabel(patient.gender)} />
-                  <InfoRow label="Estado Civil" value={patient.maritalStatus ? maritalStatusLabel(patient.maritalStatus) : null} />
-                  <InfoRow label="Grupo Sanguíneo" value={patient.bloodType ? bloodTypeLabel(patient.bloodType) : null} />
-                  <InfoRow label="Ocupación" value={patient.occupation} />
-                  <InfoRow label="N° Seguro" value={patient.insuranceNumber} />
-                </div>
-              </section>
-            </TabsContent>
         </Tabs>
       </div>
+
     </div>
   )
 }
